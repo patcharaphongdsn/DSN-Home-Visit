@@ -27,37 +27,86 @@ function toast(message) {
   clearTimeout(window.__toast); window.__toast = setTimeout(()=>el.classList.remove("show"), 3000);
 }
 
+
+let loadingDepth = 0;
+
+function showLoading(title = "กำลังโหลดข้อมูล", message = "กรุณารอสักครู่") {
+  loadingDepth += 1;
+  $("loadingTitle").textContent = title;
+  $("loadingMessage").textContent = message;
+  $("loadingOverlay").classList.remove("hidden");
+  document.body.classList.add("is-loading");
+}
+
+function updateLoading(title, message = "กรุณารอสักครู่") {
+  $("loadingTitle").textContent = title;
+  $("loadingMessage").textContent = message;
+}
+
+function hideLoading(force = false) {
+  loadingDepth = force ? 0 : Math.max(0, loadingDepth - 1);
+  if (loadingDepth === 0) {
+    $("loadingOverlay").classList.add("hidden");
+    document.body.classList.remove("is-loading");
+  }
+}
+
+function loadingText(action) {
+  const messages = {
+    login: ["กำลังเข้าสู่ระบบ", "กำลังตรวจสอบอีเมลและรหัสผ่าน"],
+    register: ["กำลังสมัครสมาชิก", "กำลังบันทึกบัญชีลงในระบบ"],
+    forgotPassword: ["กำลังส่งอีเมล", "กำลังสร้างลิงก์ตั้งรหัสผ่านใหม่"],
+    saveProfile: ["กำลังบันทึกข้อมูล", "กำลังเชื่อมข้อมูลกับห้องเรียน"],
+    getLocation: ["กำลังโหลดข้อมูลบ้าน", "กำลังตรวจสอบข้อมูลล่าสุด"],
+    saveLocation: ["กำลังบันทึกพิกัดบ้าน", "กรุณาอย่าปิดหน้านี้"],
+    getTeacherDashboard: ["กำลังโหลดรายชื่อนักเรียน", "กำลังตรวจสอบสถานะการปักหมุด"],
+    calculateGroups: ["กำลังคำนวณกลุ่มเยี่ยมบ้าน", "ระบบกำลังจัดบ้านที่อยู่ในเส้นทางใกล้กัน"],
+    saveGroups: ["กำลังบันทึกแผนเยี่ยมบ้าน", "กรุณาอย่าปิดหน้านี้"],
+    getAdminDashboard: ["กำลังโหลดข้อมูลระบบ", "กำลังรวบรวมข้อมูลสมาชิก"],
+    setAcademicYear: ["กำลังเปลี่ยนปีการศึกษา", "กำลังอัปเดตการตั้งค่าระบบ"],
+    toggleAccount: ["กำลังอัปเดตบัญชี", "กรุณารอสักครู่"]
+  };
+  return messages[action] || ["กำลังโหลดข้อมูล", "กรุณารอสักครู่"];
+}
+
 async function api(action, payload = {}) {
   if (!CONFIG.API_URL || CONFIG.API_URL.includes("PASTE_YOUR")) {
     throw new Error("ยังไม่ได้เชื่อม Google Apps Script กรุณาใส่ Web App URL ในไฟล์ app.js");
   }
 
-  let response;
-  try {
-    response = await fetch(CONFIG.API_URL, {
-      method: "POST",
-      headers: {"Content-Type": "text/plain;charset=utf-8"},
-      body: JSON.stringify({
-        action,
-        token: localStorage.getItem("dsnToken") || "",
-        ...payload
-      })
-    });
-  } catch (error) {
-    throw new Error("เชื่อมต่อระบบไม่ได้ กรุณาตรวจสอบ Web App URL และการ Deploy");
-  }
+  const [title, message] = loadingText(action);
+  showLoading(title, message);
 
-  let data;
   try {
-    data = await response.json();
-  } catch (error) {
-    throw new Error("ระบบหลังบ้านตอบกลับไม่ถูกต้อง กรุณา Deploy Google Apps Script เวอร์ชันล่าสุด");
-  }
+    let response;
+    try {
+      response = await fetch(CONFIG.API_URL, {
+        method: "POST",
+        headers: {"Content-Type": "text/plain;charset=utf-8"},
+        body: JSON.stringify({
+          action,
+          token: localStorage.getItem("dsnToken") || "",
+          ...payload
+        })
+      });
+    } catch (error) {
+      throw new Error("เชื่อมต่อระบบไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ตและ Web App URL");
+    }
 
-  if (!data.ok) {
-    throw new Error(data.message || "เกิดข้อผิดพลาดในระบบ");
+    let data;
+    try {
+      data = await response.json();
+    } catch (error) {
+      throw new Error("ระบบหลังบ้านตอบกลับไม่ถูกต้อง กรุณา Deploy Google Apps Script เวอร์ชันล่าสุด");
+    }
+
+    if (!data.ok) {
+      throw new Error(data.message || "เกิดข้อผิดพลาดในระบบ");
+    }
+    return data;
+  } finally {
+    hideLoading();
   }
-  return data;
 }
 
 document.querySelectorAll("[data-go]").forEach(btn=>btn.addEventListener("click",()=>{
@@ -212,3 +261,5 @@ $("academicYearForm").onsubmit=async e=>{e.preventDefault();const year=String($(
 function formatClass(c){if(!c)return"-";return c.replace(/^M(\d)-(\d+)$/,"ม.$1/$2")}
 function buildAddress(l){return [l.houseNumber,l.moo&&`หมู่ ${l.moo}`,l.village,l.soi&&`ซอย ${l.soi}`,l.road&&`ถนน ${l.road}`,l.subdistrict,l.district,l.province,l.postalCode].filter(Boolean).join(" ")}
 function googleMapsRoute(members){const s=CONFIG.SCHOOL_COORDS.join(",");const pts=members.map(x=>`${x.latitude},${x.longitude}`);const waypoints=pts.join("|");return `https://www.google.com/maps/dir/?api=1&origin=${s}&destination=${s}&waypoints=${encodeURIComponent(waypoints)}&travelmode=driving`}
+
+window.addEventListener("pageshow",()=>hideLoading(true));
