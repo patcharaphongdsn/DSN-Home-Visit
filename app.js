@@ -1,5 +1,5 @@
 const CONFIG = {
-  API_URL: "PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE",
+  API_URL: "https://script.google.com/macros/s/AKfycbw-dOfsvJW8CS1K86saUNkJN46Qp65Llr-7oJA6g7xwc3Xuu38VzkSqrQ1suB7QCl3u0g/exec",
   SCHOOL_NAME: "โรงเรียนเทพศิรินทร์ นนทบุรี",
   SCHOOL_COORDS: [13.8776, 100.4074],
   DEMO_MODE: true
