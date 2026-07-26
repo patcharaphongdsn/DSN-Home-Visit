@@ -58,3 +58,140 @@ dialog{width:min(720px,calc(100% - 30px));border:0;border-radius:28px;padding:0;
 .toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:var(--text);color:white;padding:12px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:.25s;z-index:100}.toast.show{opacity:1;transform:translate(-50%,0)}
 @media(max-width:1100px){.portal-grid{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:repeat(2,1fr)}.location-layout,.auth-wrap{grid-template-columns:1fr}.form-panel{margin:0;max-width:none}.route-groups{grid-template-columns:1fr}}
 @media(max-width:720px){.app-shell{width:min(100% - 20px,1600px);padding-top:40px}.topbar{width:calc(100% - 20px)}.brand span,.badge{display:none}.portal-grid,.dashboard-grid,.metric-grid,.admin-grid,.form-grid{grid-template-columns:1fr}.portal-card{min-height:130px}.dashboard-head,.section-title{align-items:flex-start;flex-direction:column}.number-chips{grid-template-columns:repeat(2,1fr)}#map{height:420px}.action-row{width:100%}.action-row button{flex:1}}
+
+
+.loading-overlay{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  display:grid;
+  place-items:center;
+  padding:24px;
+  background:rgba(241,247,243,.58);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  opacity:1;
+  transition:opacity .2s ease;
+}
+.loading-overlay.hidden{
+  display:none!important;
+}
+.loading-card{
+  min-width:min(390px,calc(100vw - 40px));
+  border-radius:32px;
+  padding:24px 26px;
+  display:flex;
+  align-items:center;
+  gap:18px;
+  background:rgba(255,255,255,.88);
+  box-shadow:0 30px 90px rgba(21,56,40,.18);
+}
+.loading-spinner{
+  width:48px;
+  height:48px;
+  flex:0 0 48px;
+  border-radius:50%;
+  border:4px solid rgba(14,107,67,.13);
+  border-top-color:var(--green);
+  animation:loadingSpin .8s linear infinite;
+}
+.loading-copy{
+  display:grid;
+  gap:3px;
+}
+.loading-copy strong{
+  font-size:18px;
+}
+.loading-copy span{
+  color:var(--muted);
+  font-size:13px;
+}
+body.is-loading{
+  overflow:hidden;
+}
+body.is-loading button,
+body.is-loading input,
+body.is-loading select,
+body.is-loading textarea{
+  pointer-events:none;
+}
+@keyframes loadingSpin{
+  to{transform:rotate(360deg)}
+}
+
+
+.password-dialog{
+  width:min(520px,calc(100% - 28px));
+}
+.password-dialog-body{
+  padding:24px;
+  display:grid;
+  gap:18px;
+}
+.password-dialog-body p{
+  margin:0;
+  color:var(--muted);
+  line-height:1.7;
+}
+
+
+.admin-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.danger-btn{
+  border:0;
+  border-radius:999px;
+  padding:12px 18px;
+  background:rgba(185,58,67,.10);
+  color:var(--danger);
+  font-weight:700;
+}
+.warning-card{
+  padding:16px;
+  border-radius:20px;
+  background:rgba(211,170,59,.12);
+  border:1px solid rgba(211,170,59,.24);
+}
+
+
+.logo-mark{
+  overflow:hidden;
+  background:transparent!important;
+  padding:0;
+}
+.logo-mark img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+}
+.hero-school-logo{
+  width:96px;
+  height:96px;
+  object-fit:contain;
+  display:block;
+  margin-bottom:24px;
+}
+.hero-copy a{
+  color:var(--green);
+  font-weight:700;
+  text-decoration:none;
+}
+.hero-copy a:hover{
+  text-decoration:underline;
+}
+.portal-card{
+  grid-template-columns:1fr auto!important;
+}
+.portal-card > div{
+  min-width:0;
+}
+@media(max-width:720px){
+  .hero-school-logo{
+    width:78px;
+    height:78px;
+    margin-bottom:18px;
+  }
+}
