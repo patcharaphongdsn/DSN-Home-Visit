@@ -334,7 +334,21 @@ function bindGroupEvents(){
 }
 function moveWithin(g,i,dir){const arr=state.groups[g].members,j=i+dir;if(j<0||j>=arr.length)return;[arr[i],arr[j]]=[arr[j],arr[i]];renderGroups()}
 $("recalculateBtn").onclick=()=>showView("route-options");
-$("saveGroupsBtn").onclick=async()=>{try{await api("saveGroups",{groups:state.groups});toast("บันทึกแผนเยี่ยมบ้านเรียบร้อยแล้ว");showView("teacher")}catch(err){toast(err.message)}};
+$("saveGroupsBtn").onclick = async () => {
+  try {
+    await api("saveGroups", {
+      groups: state.groups
+    });
+
+    toast("บันทึกแผนเยี่ยมบ้านเรียบร้อยแล้ว");
+
+    await loadTeacher();
+    showView("teacher");
+  } catch (error) {
+    toast(error.message);
+  }
+};
+
 function renderSavedGroups(){const el=$("savedGroups");if(!state.savedGroups?.length){el.className="group-list empty-state";el.textContent="ยังไม่มีแผนที่บันทึกไว้";return}
   el.className="group-list";el.innerHTML=state.savedGroups.map(g=>`<div class="info-row"><span>${g.groupName}</span><strong>${g.members?.length||0} หลัง</strong></div>`).join("")}
 
