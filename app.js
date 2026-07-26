@@ -349,8 +349,55 @@ $("saveGroupsBtn").onclick = async () => {
   }
 };
 
-function renderSavedGroups(){const el=$("savedGroups");if(!state.savedGroups?.length){el.className="group-list empty-state";el.textContent="ยังไม่มีแผนที่บันทึกไว้";return}
-  el.className="group-list";el.innerHTML=state.savedGroups.map(g=>`<div class="info-row"><span>${g.groupName}</span><strong>${g.members?.length||0} หลัง</strong></div>`).join("")}
+function renderSavedGroups() {
+  const container = $("savedGroups");
+
+  if (!state.savedGroups?.length) {
+    container.className = "group-list empty-state";
+    container.textContent = "ยังไม่มีแผนที่บันทึกไว้";
+    return;
+  }
+
+  container.className = "group-list";
+
+  container.innerHTML = `
+    ${state.savedGroups.map((group, index) => `
+      <div class="saved-group-row">
+        <div>
+          <strong>${escapeHtml(group.groupName || `กลุ่มที่ ${index + 1}`)}</strong>
+          <span>${group.members?.length || 0} หลัง</span>
+        </div>
+
+        <button
+          class="ghost-btn open-saved-plan"
+          type="button"
+        >
+          เปิดดูและแก้ไข
+        </button>
+      </div>
+    `).join("")}
+  `;
+
+  document.querySelectorAll(".open-saved-plan").forEach(button => {
+    button.onclick = openSavedPlan;
+  });
+}
+function openSavedPlan() {
+  state.groups = (state.savedGroups || []).map(group => ({
+    groupId: group.groupId,
+    groupName: group.groupName,
+    members: (group.members || []).map(member => ({
+      ...member
+    }))
+  }));
+
+  if (!state.groups.length) {
+    return toast("ไม่พบข้อมูลแผนเยี่ยมบ้าน");
+  }
+
+  renderGroups();
+  showView("route-groups");
+}
 
 async function loadAdmin() {
   const d = await api("getAdminDashboard");
