@@ -1,11 +1,8 @@
 const CONFIG = {
   API_URL: "https://script.google.com/macros/s/AKfycbw-dOfsvJW8CS1K86saUNkJN46Qp65Llr-7oJA6g7xwc3Xuu38VzkSqrQ1suB7QCl3u0g/exec",
   SCHOOL_NAME: "โรงเรียนเทพศิรินทร์ นนทบุรี",
-  SCHOOL_COORDS: [13.8776, 100.4074]
+  SCHOOL_COORDS: [13.8139368, 100.4139846]
 };
-
-const BUILD_ID = "COMPLETE-20260726-5";
-console.info("DSN Home Visit build:", BUILD_ID);
 
 const state = {
   view: "home", history: [], authRole: "student", user: null, profile: null,
@@ -30,93 +27,37 @@ function toast(message) {
   clearTimeout(window.__toast); window.__toast = setTimeout(()=>el.classList.remove("show"), 3000);
 }
 
-
-let loadingDepth = 0;
-
-function showLoading(title = "กำลังโหลดข้อมูล", message = "กรุณารอสักครู่") {
-  loadingDepth += 1;
-  $("loadingTitle").textContent = title;
-  $("loadingMessage").textContent = message;
-  $("loadingOverlay").classList.remove("hidden");
-  document.body.classList.add("is-loading");
-}
-
-function updateLoading(title, message = "กรุณารอสักครู่") {
-  $("loadingTitle").textContent = title;
-  $("loadingMessage").textContent = message;
-}
-
-function hideLoading(force = false) {
-  loadingDepth = force ? 0 : Math.max(0, loadingDepth - 1);
-  if (loadingDepth === 0) {
-    $("loadingOverlay").classList.add("hidden");
-    document.body.classList.remove("is-loading");
-  }
-}
-
-function loadingText(action) {
-  const messages = {
-    login: ["กำลังเข้าสู่ระบบ", "กำลังตรวจสอบอีเมลและรหัสผ่าน"],
-    register: ["กำลังสมัครสมาชิก", "กำลังบันทึกบัญชีลงในระบบ"],
-    forgotPassword: ["กำลังส่งอีเมล", "กำลังสร้างลิงก์ตั้งรหัสผ่านใหม่"],
-    saveProfile: ["กำลังบันทึกข้อมูล", "กำลังเชื่อมข้อมูลกับห้องเรียน"],
-    getLocation: ["กำลังโหลดข้อมูลบ้าน", "กำลังตรวจสอบข้อมูลล่าสุด"],
-    saveLocation: ["กำลังบันทึกพิกัดบ้าน", "กรุณาอย่าปิดหน้านี้"],
-    getTeacherDashboard: ["กำลังโหลดรายชื่อนักเรียน", "กำลังตรวจสอบสถานะการปักหมุด"],
-    calculateGroups: ["กำลังคำนวณกลุ่มเยี่ยมบ้าน", "ระบบกำลังจัดบ้านที่อยู่ในเส้นทางใกล้กัน"],
-    saveGroups: ["กำลังบันทึกแผนเยี่ยมบ้าน", "กรุณาอย่าปิดหน้านี้"],
-    getAdminDashboard: ["กำลังโหลดข้อมูลระบบ", "กำลังรวบรวมข้อมูลสมาชิก"],
-    setAcademicYear: ["กำลังเปลี่ยนปีการศึกษา", "กำลังอัปเดตการตั้งค่าระบบ"],
-    toggleAccount: ["กำลังอัปเดตบัญชี", "กรุณารอสักครู่"],
-    adminResetPassword: ["กำลังตั้งรหัสผ่านชั่วคราว", "กำลังอัปเดตความปลอดภัยของบัญชี"],
-    changeOwnPassword: ["กำลังบันทึกรหัสผ่านใหม่", "กรุณาอย่าปิดหน้านี้"],
-    getCloseYearPreview: ["กำลังตรวจสอบข้อมูลปีการศึกษา", "กำลังจัดทำสรุปก่อนปิดปี"],
-    closeAcademicYear: ["กำลังปิดปีการศึกษา", "กำลังสำรองและย้ายข้อมูล กรุณาอย่าปิดหน้านี้"],
-    updateMember: ["กำลังบันทึกข้อมูลสมาชิก", "กรุณารอสักครู่"],
-    deleteMember: ["กำลังลบบัญชีและข้อมูล", "กรุณาอย่าปิดหน้านี้"],
-    getArchiveSummary: ["กำลังโหลดข้อมูลย้อนหลัง", "กรุณารอสักครู่"]
-  };
-  return messages[action] || ["กำลังโหลดข้อมูล", "กรุณารอสักครู่"];
-}
-
 async function api(action, payload = {}) {
   if (!CONFIG.API_URL || CONFIG.API_URL.includes("PASTE_YOUR")) {
     throw new Error("ยังไม่ได้เชื่อม Google Apps Script กรุณาใส่ Web App URL ในไฟล์ app.js");
   }
 
-  const [title, message] = loadingText(action);
-  showLoading(title, message);
-
+  let response;
   try {
-    let response;
-    try {
-      response = await fetch(CONFIG.API_URL, {
-        method: "POST",
-        headers: {"Content-Type": "text/plain;charset=utf-8"},
-        body: JSON.stringify({
-          action,
-          token: localStorage.getItem("dsnToken") || "",
-          ...payload
-        })
-      });
-    } catch (error) {
-      throw new Error("เชื่อมต่อระบบไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ตและ Web App URL");
-    }
-
-    let data;
-    try {
-      data = await response.json();
-    } catch (error) {
-      throw new Error("ระบบหลังบ้านตอบกลับไม่ถูกต้อง กรุณา Deploy Google Apps Script เวอร์ชันล่าสุด");
-    }
-
-    if (!data.ok) {
-      throw new Error(data.message || "เกิดข้อผิดพลาดในระบบ");
-    }
-    return data;
-  } finally {
-    hideLoading();
+    response = await fetch(CONFIG.API_URL, {
+      method: "POST",
+      headers: {"Content-Type": "text/plain;charset=utf-8"},
+      body: JSON.stringify({
+        action,
+        token: localStorage.getItem("dsnToken") || "",
+        ...payload
+      })
+    });
+  } catch (error) {
+    throw new Error("เชื่อมต่อระบบไม่ได้ กรุณาตรวจสอบ Web App URL และการ Deploy");
   }
+
+  let data;
+  try {
+    data = await response.json();
+  } catch (error) {
+    throw new Error("ระบบหลังบ้านตอบกลับไม่ถูกต้อง กรุณา Deploy Google Apps Script เวอร์ชันล่าสุด");
+  }
+
+  if (!data.ok) {
+    throw new Error(data.message || "เกิดข้อผิดพลาดในระบบ");
+  }
+  return data;
 }
 
 document.querySelectorAll("[data-go]").forEach(btn=>btn.addEventListener("click",()=>{
@@ -136,42 +77,12 @@ $("loginForm").addEventListener("submit",async e=>{
     const data=await api("login",{email:$("loginEmail").value.trim(),password:$("loginPassword").value,role:state.authRole});
     localStorage.setItem("dsnToken",data.token); state.user=data.user;state.profile=data.profile;
     $("userMenu").classList.remove("hidden");
-    if(data.user.mustChangePassword){
-      $("passwordChangeDialog").showModal();
-      return;
-    }
     if(!data.user.profileCompleted){configureProfile(data.user.role);showView("profile");return}
     await openDashboard(data.user.role);
   }catch(err){toast(err.message)}
 });
 $("forgotBtn").onclick=()=>showView("forgot");
 $("forgotForm").addEventListener("submit",async e=>{e.preventDefault();try{await api("forgotPassword",{email:$("forgotEmail").value.trim()});toast("ส่งคำขอเรียบร้อยแล้ว กรุณาตรวจสอบอีเมล");showView("auth")}catch(err){toast(err.message)}});
-
-
-$("passwordChangeForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  const password = $("newOwnPassword").value;
-  const confirm = $("confirmOwnPassword").value;
-  if (password !== confirm) return toast("รหัสผ่านทั้งสองช่องไม่ตรงกัน");
-  if (password.length < 8) return toast("รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร");
-
-  try {
-    const result = await api("changeOwnPassword", {password});
-    if (result.token) localStorage.setItem("dsnToken", result.token);
-    state.user.mustChangePassword = false;
-    $("passwordChangeDialog").close();
-    $("passwordChangeForm").reset();
-    toast("ตั้งรหัสผ่านใหม่เรียบร้อยแล้ว");
-    if (!state.user.profileCompleted) {
-      configureProfile(state.user.role);
-      showView("profile");
-      return;
-    }
-    await openDashboard(state.user.role);
-  } catch (err) {
-    toast(err.message);
-  }
-});
 
 $("registerForm").addEventListener("submit",async e=>{
   e.preventDefault(); const role=document.querySelector('input[name="role"]:checked').value;
@@ -210,7 +121,14 @@ async function renderStudent(){
   $("studentTeamCard").innerHTML=`<div class="info-row"><span>ห้องเรียน</span><strong>${formatClass(p.classCode)}</strong></div><div class="info-row"><span>ครูที่ปรึกษา</span><strong>${p.teacherName||"รอครูลงทะเบียน"}</strong></div>`;
   const data=await api("getLocation"); const loc=data.location; const mapped=!!loc || p.locationStatus==="Submitted";
   $("studentStatus").textContent=mapped?"ปักหมุดบ้านแล้ว":"ยังไม่ได้ปักหมุดบ้าน";$("studentStatus").className=`status-pill ${mapped?"success":"danger"}`;
-  $("studentLocationSummary").innerHTML=loc?`<div class="info-stack"><div class="info-row"><span>ที่อยู่</span><strong>${buildAddress(loc)}</strong></div><div class="info-row"><span>พิกัด</span><strong>${Number(loc.latitude).toFixed(6)}, ${Number(loc.longitude).toFixed(6)}</strong></div></div>`:"ยังไม่มีข้อมูลบ้าน";
+  const address = loc ? buildAddress(loc) : "";
+  const hasCoords = loc && Number.isFinite(Number(loc.latitude)) && Number.isFinite(Number(loc.longitude));
+  $("studentLocationSummary").innerHTML=loc?`<div class="info-stack">
+    <div class="info-row"><span>ที่อยู่</span><strong>${address || "-"}</strong></div>
+    <div class="info-row"><span>พิกัด</span><strong>${hasCoords ? `${Number(loc.latitude).toFixed(6)}, ${Number(loc.longitude).toFixed(6)}` : "-"}</strong></div>
+    ${loc.landmark ? `<div class="info-row"><span>จุดสังเกต</span><strong>${escapeHtml(loc.landmark)}</strong></div>` : ""}
+    ${loc.addressDetails ? `<div class="info-row"><span>รายละเอียดเพิ่มเติม</span><strong>${escapeHtml(loc.addressDetails)}</strong></div>` : ""}
+  </div>`:"ยังไม่มีข้อมูลบ้าน";
   $("editLocationBtn").classList.toggle("hidden",!loc);
 }
 $("openLocationFormBtn").onclick=()=>showView("consent");$("editLocationBtn").onclick=()=>showView("consent");
@@ -223,7 +141,14 @@ function initMap(){
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(state.map);
   L.marker(CONFIG.SCHOOL_COORDS).addTo(state.map).bindPopup(CONFIG.SCHOOL_NAME);
   state.map.on("click",e=>setMarker(e.latlng.lat,e.latlng.lng));
-  api("getLocation").then(d=>{if(d.location)setMarker(Number(d.location.latitude),Number(d.location.longitude),true)});
+  api("getLocation").then(d=>{
+    if(!d.location) return;
+    const loc=d.location;
+    if(Number.isFinite(Number(loc.latitude)) && Number.isFinite(Number(loc.longitude))){
+      setMarker(Number(loc.latitude),Number(loc.longitude),true);
+    }
+    fillLocationForm(loc);
+  }).catch(err=>toast(err.message));
 }
 function setMarker(lat,lng,pan=false){state.lat=lat;state.lng=lng;if(state.marker)state.marker.setLatLng([lat,lng]);else state.marker=L.marker([lat,lng],{draggable:true}).addTo(state.map).on("dragend",e=>{const p=e.target.getLatLng();setMarker(p.lat,p.lng)});
   $("coordinateText").textContent=`${lat.toFixed(6)}, ${lng.toFixed(6)}`;if(pan)state.map.setView([lat,lng],15);
@@ -239,17 +164,9 @@ $("locationForm").addEventListener("submit",async e=>{
 });
 
 async function loadTeacher(){
-  const d=await api("getTeacherDashboard");
-  state.students=d.students||[];
-  state.savedGroups=d.groups||[];
-
-  const p=state.profile||{};
-  const fullName=[p.firstName,p.lastName].filter(Boolean).join(" ");
-  $("teacherWelcome").textContent=fullName?`คุณครู ${fullName}`:"ข้อมูลครูยังไม่สมบูรณ์";
-  $("teacherClass").textContent=p.classCode?`ครูที่ปรึกษาห้อง ${formatClass(p.classCode)}`:"กรุณาเลือกห้องที่ปรึกษา";
-
-  renderStudentTable(state.students);
-  renderSavedGroups();
+  const d=await api("getTeacherDashboard");state.students=d.students||[];state.savedGroups=d.groups||[];
+  const p=state.profile||{};$("teacherWelcome").textContent=`คุณครู ${p.firstName||""} ${p.lastName||""}`;$("teacherClass").textContent=`ครูที่ปรึกษาห้อง ${formatClass(p.classCode)}`;
+  renderStudentTable(state.students);renderSavedGroups();
 }
 function renderStudentTable(list){
   const sorted=[...list].sort((a,b)=>Number(a.numberInClass)-Number(b.numberInClass));
@@ -261,9 +178,36 @@ function renderStudentTable(list){
   document.querySelectorAll(".detail-btn").forEach(b=>b.onclick=()=>showStudentDetail(b.dataset.id));
 }
 $("studentSearch").oninput=e=>{const q=e.target.value.toLowerCase();renderStudentTable(state.students.filter(s=>`${s.firstName} ${s.lastName}`.toLowerCase().includes(q)))};
-function showStudentDetail(id){const s=state.students.find(x=>x.studentId===id);$("dialogTitle").textContent=`${s.firstName} ${s.lastName}`;$("dialogBody").innerHTML=`
-  <div class="info-stack"><div class="info-row"><span>เลขที่</span><strong>${s.numberInClass}</strong></div><div class="info-row"><span>สถานะบ้าน</span><strong>${s.locationStatus==="Submitted"?"ปักหมุดแล้ว":"ยังไม่ปักหมุด"}</strong></div>
-  ${s.locationStatus==="Submitted"?`<div class="info-row"><span>ที่อยู่</span><strong>${s.address||"-"}</strong></div><div class="info-row"><span>พิกัด</span><strong>${s.latitude}, ${s.longitude}</strong></div><a class="primary-btn" target="_blank" href="https://www.google.com/maps?q=${s.latitude},${s.longitude}">เปิดใน Google Maps</a>`:""}</div>`;$("detailDialog").showModal()}
+function showStudentDetail(id){
+  const s=state.students.find(x=>String(x.studentId)===String(id));
+  if(!s){ toast("ไม่พบข้อมูลนักเรียน"); return; }
+
+  $("dialogTitle").textContent=`${s.firstName||""} ${s.lastName||""}`.trim() || "รายละเอียดนักเรียน";
+  const mapped=s.locationStatus==="Submitted";
+  const hasCoords=Number.isFinite(Number(s.latitude)) && Number.isFinite(Number(s.longitude));
+  const mapButton=mapped && hasCoords
+    ? `<a class="primary-btn" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${s.latitude},${s.longitude}">เปิดตำแหน่งใน Google Maps</a>`
+    : "";
+
+  $("dialogBody").innerHTML=`
+    <div class="info-stack">
+      <div class="info-row"><span>เลขที่</span><strong>${s.numberInClass||"-"}</strong></div>
+      <div class="info-row"><span>ห้องเรียน</span><strong>${formatClass(s.classCode)}</strong></div>
+      <div class="info-row"><span>สถานะบ้าน</span><strong>${mapped?"ปักหมุดบ้านแล้ว":"ยังไม่ปักหมุดบ้าน"}</strong></div>
+      <div class="info-row"><span>ผู้ปกครอง</span><strong>${escapeHtml(s.parentName||"-")}</strong></div>
+      <div class="info-row"><span>เบอร์ผู้ปกครอง</span><strong>${escapeHtml(s.parentPhone||"-")}</strong></div>
+      ${mapped?`
+        <div class="info-row"><span>ที่อยู่</span><strong>${escapeHtml(s.address||"-")}</strong></div>
+        <div class="info-row"><span>พิกัด</span><strong>${hasCoords?`${Number(s.latitude).toFixed(6)}, ${Number(s.longitude).toFixed(6)}`:"-"}</strong></div>
+        <div class="info-row"><span>จุดสังเกต</span><strong>${escapeHtml(s.landmark||"-")}</strong></div>
+        <div class="info-row"><span>รายละเอียดเพิ่มเติม</span><strong>${escapeHtml(s.addressDetails||"-")}</strong></div>
+        <div class="info-row"><span>ผู้ติดต่อ</span><strong>${escapeHtml(s.contactName||"-")}</strong></div>
+        <div class="info-row"><span>เบอร์โทรศัพท์</span><strong>${escapeHtml(s.contactPhone||"-")}</strong></div>
+        ${mapButton}
+      `:""}
+    </div>`;
+  $("detailDialog").showModal();
+}
 $("closeDialogBtn").onclick=()=>$("detailDialog").close();
 $("calculateRouteBtn").onclick=()=>showView("route-options");
 document.querySelectorAll('input[name="routeMode"]').forEach(r=>r.onchange=()=>$("fixedSizeOptions").classList.toggle("hidden",r.value!=="fixed"||!r.checked));
@@ -297,149 +241,22 @@ function renderSavedGroups(){const el=$("savedGroups");if(!state.savedGroups?.le
   el.className="group-list";el.innerHTML=state.savedGroups.map(g=>`<div class="info-row"><span>${g.groupName}</span><strong>${g.members?.length||0} หลัง</strong></div>`).join("")}
 
 async function loadAdmin(){
-  const d=await api("getAdminDashboard");
-  state.academicYear=String(d.academicYear||state.academicYear);
-  $("currentAcademicYearText").textContent=state.academicYear;
-  $("activeYearBadge").textContent=`ปีการศึกษา ${state.academicYear}`;
-  $("adminMetrics").innerHTML=Object.entries(d.metrics||{}).map(([k,v])=>`<div class="info-row"><span>${({
-    users:"สมาชิกทั้งหมด",teachers:"ครู",students:"นักเรียนปัจจุบัน",mapped:"ปักหมุดแล้ว",
-    graduated:"ศิษย์เก่า",archives:"ปีการศึกษาที่ปิดแล้ว"
-  })[k]||k}</span><strong>${v}</strong></div>`).join("");
-  state.accounts=d.accounts||[];
-  state.archiveYears=d.archiveYears||[];
-  renderAccounts(state.accounts);
-  $("archiveYearSelect").innerHTML='<option value="">เลือกปีการศึกษา</option>'+state.archiveYears.map(y=>`<option value="${y}">${y}</option>`).join("");
+  const d=await api("getAdminDashboard");state.academicYear=String(d.academicYear||state.academicYear);$("academicYearInput").value=state.academicYear;$("activeYearBadge").textContent=`ปีการศึกษา ${state.academicYear}`;
+  $("adminMetrics").innerHTML=Object.entries(d.metrics||{}).map(([k,v])=>`<div class="info-row"><span>${({users:"สมาชิกทั้งหมด",teachers:"ครู",students:"นักเรียน",mapped:"ปักหมุดแล้ว"})[k]||k}</span><strong>${v}</strong></div>`).join("");
+  state.accounts=d.accounts||[];renderAccounts(state.accounts);
 }
-function renderAccounts(list){
-  if(!list.length){
-    $("accountTableBody").innerHTML='<tr><td colspan="6" class="empty-state">ยังไม่มีบัญชีสมาชิกในระบบ</td></tr>';
-    return;
-  }
-  $("accountTableBody").innerHTML=list.map(a=>`<tr>
-    <td>${a.email}</td>
-    <td>${a.role}</td>
-    <td>${a.name||"-"}</td>
-    <td>${formatClass(a.classCode)}</td>
-    <td><span class="table-status ${a.status==="Active"?"success":"danger"}">${a.status}</span></td>
-    <td>
-      <div class="admin-actions">
-        <button class="ghost-btn edit-account" data-id="${a.userId}">แก้ไข</button>
-        <button class="ghost-btn reset-password" data-email="${a.email}">ตั้งรหัสชั่วคราว</button>
-        <button class="danger-btn delete-account" data-id="${a.userId}" data-name="${a.name||a.email}">ลบข้อมูล</button>
-      </div>
-    </td>
-  </tr>`).join("");
-
-  document.querySelectorAll(".reset-password").forEach(b=>b.onclick=async()=>{
-    const password=prompt("กรอกรหัสผ่านชั่วคราวอย่างน้อย 8 ตัวอักษร");
-    if(password===null)return;
-    if(password.length<8)return toast("รหัสผ่านชั่วคราวต้องมีอย่างน้อย 8 ตัวอักษร");
-    try{
-      await api("adminResetPassword",{email:b.dataset.email,password});
-      toast("ตั้งรหัสผ่านชั่วคราวแล้ว สมาชิกจะต้องเปลี่ยนรหัสเมื่อเข้าสู่ระบบ");
-    }catch(err){toast(err.message)}
-  });
-
-  document.querySelectorAll(".edit-account").forEach(b=>b.onclick=()=>{
-    const a=state.accounts.find(x=>x.userId===b.dataset.id);
-    $("editUserId").value=a.userId;
-    $("editEmail").value=a.email||"";
-    $("editFirstName").value=a.firstName||"";
-    $("editLastName").value=a.lastName||"";
-    $("editGradeLevel").value=a.gradeLevel||"";
-    $("editClassroom").value=a.classroom||"";
-    $("editNumberInClass").value=a.numberInClass||"";
-    $("editAccountDialog").showModal();
-  });
-
-  document.querySelectorAll(".delete-account").forEach(b=>b.onclick=async()=>{
-    const confirmText=prompt(`พิมพ์คำว่า ลบ ${b.dataset.name} เพื่อยืนยัน`);
-    if(confirmText!==`ลบ ${b.dataset.name}`)return toast("ยกเลิกการลบข้อมูล");
-    try{
-      await api("deleteMember",{userId:b.dataset.id});
-      toast("ลบบัญชีและข้อมูลที่เกี่ยวข้องแล้ว");
-      await loadAdmin();
-    }catch(err){toast(err.message)}
-  });
-}
+function renderAccounts(list){$("accountTableBody").innerHTML=list.map((a,i)=>`<tr><td>${a.email}</td><td>${a.role}</td><td>${a.name||"-"}</td><td>${formatClass(a.classCode)}</td><td><span class="table-status ${a.status==="Active"?"success":"danger"}">${a.status}</span></td><td><button class="ghost-btn toggle-account" data-i="${i}">${a.status==="Active"?"ระงับ":"เปิดใช้งาน"}</button></td></tr>`).join("");
+  document.querySelectorAll(".toggle-account").forEach(b=>b.onclick=async()=>{const a=state.accounts[+b.dataset.i];await api("toggleAccount",{email:a.email});a.status=a.status==="Active"?"Suspended":"Active";renderAccounts(state.accounts)})}
 $("accountSearch").oninput=e=>{const q=e.target.value.toLowerCase();renderAccounts(state.accounts.filter(a=>`${a.email} ${a.name}`.toLowerCase().includes(q)))};
-
+$("academicYearForm").onsubmit=async e=>{e.preventDefault();const year=String($("academicYearInput").value);await api("setAcademicYear",{year});state.academicYear=year;$("activeYearBadge").textContent=`ปีการศึกษา ${year}`;toast("เปลี่ยนปีการศึกษาเรียบร้อยแล้ว")};
 
 function formatClass(c){if(!c)return"-";return c.replace(/^M(\d)-(\d+)$/,"ม.$1/$2")}
+function fillLocationForm(loc){
+  const fields=["houseNumber","moo","village","soi","road","subdistrict","district","province","postalCode","landmark","contactName","contactPhone","addressDetails"];
+  fields.forEach(id=>{ if($(id) && loc[id]!==undefined && loc[id]!==null) $(id).value=loc[id]; });
+}
+function escapeHtml(value){
+  return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]));
+}
 function buildAddress(l){return [l.houseNumber,l.moo&&`หมู่ ${l.moo}`,l.village,l.soi&&`ซอย ${l.soi}`,l.road&&`ถนน ${l.road}`,l.subdistrict,l.district,l.province,l.postalCode].filter(Boolean).join(" ")}
 function googleMapsRoute(members){const s=CONFIG.SCHOOL_COORDS.join(",");const pts=members.map(x=>`${x.latitude},${x.longitude}`);const waypoints=pts.join("|");return `https://www.google.com/maps/dir/?api=1&origin=${s}&destination=${s}&waypoints=${encodeURIComponent(waypoints)}&travelmode=driving`}
-
-window.addEventListener("pageshow",()=>hideLoading(true));
-
-
-async function verifyBackendConnection() {
-  try {
-    const response = await fetch(CONFIG.API_URL, {method: "GET", cache: "no-store"});
-    const data = await response.json();
-    if (!data.ok) throw new Error(data.message || "Backend unavailable");
-    console.info("Google Apps Script connected:", data.service || "OK", BUILD_ID);
-  } catch (error) {
-    console.error("Google Apps Script connection failed:", error);
-    toast("เชื่อมต่อระบบหลังบ้านไม่ได้ กรุณาตรวจสอบ Apps Script");
-  }
-}
-window.addEventListener("DOMContentLoaded", verifyBackendConnection);
-
-
-$("openCloseYearBtn").onclick=async()=>{
-  try{
-    const d=await api("getCloseYearPreview");
-    $("closeYearPreview").innerHTML=`
-      <div class="info-row"><span>ปีการศึกษาที่จะปิด</span><strong>${d.currentYear}</strong></div>
-      <div class="info-row"><span>นักเรียนที่จะเลื่อนชั้น</span><strong>${d.promoteCount}</strong></div>
-      <div class="info-row"><span>นักเรียน ม.6 ที่จะเป็นศิษย์เก่า</span><strong>${d.graduateCount}</strong></div>
-      <div class="info-row"><span>ครูที่จะต้องเลือกห้องใหม่</span><strong>${d.teacherCount}</strong></div>
-      <div class="info-row"><span>แผนเยี่ยมบ้านที่จะเก็บเป็นย้อนหลัง</span><strong>${d.groupCount}</strong></div>`;
-    $("closeYearDialog").showModal();
-  }catch(err){toast(err.message)}
-};
-$("closeYearDialogBtn").onclick=()=>$("closeYearDialog").close();
-$("cancelCloseYearBtn").onclick=()=>$("closeYearDialog").close();
-
-$("closeYearForm").onsubmit=async e=>{
-  e.preventDefault();
-  try{
-    const d=await api("closeAcademicYear");
-    $("closeYearDialog").close();
-    toast(`ปิดปี ${d.closedYear} และเปิดปี ${d.newYear} เรียบร้อยแล้ว`);
-    await loadAdmin();
-  }catch(err){toast(err.message)}
-};
-
-$("closeEditAccountBtn").onclick=()=>$("editAccountDialog").close();
-$("editAccountForm").onsubmit=async e=>{
-  e.preventDefault();
-  try{
-    await api("updateMember",{
-      userId:$("editUserId").value,
-      email:$("editEmail").value.trim(),
-      firstName:$("editFirstName").value.trim(),
-      lastName:$("editLastName").value.trim(),
-      gradeLevel:$("editGradeLevel").value,
-      classroom:$("editClassroom").value,
-      numberInClass:$("editNumberInClass").value
-    });
-    $("editAccountDialog").close();
-    toast("แก้ไขข้อมูลสมาชิกเรียบร้อยแล้ว");
-    await loadAdmin();
-  }catch(err){toast(err.message)}
-};
-
-$("archiveYearSelect").onchange=async e=>{
-  if(!e.target.value){$("archiveSummary").textContent="ยังไม่ได้เลือกปีการศึกษา";return}
-  try{
-    const d=await api("getArchiveSummary",{year:e.target.value});
-    $("archiveSummary").innerHTML=`
-      <div class="info-stack">
-        <div class="info-row"><span>นักเรียนในปีนั้น</span><strong>${d.students}</strong></div>
-        <div class="info-row"><span>ครูที่ได้รับมอบหมาย</span><strong>${d.teachers}</strong></div>
-        <div class="info-row"><span>กลุ่มเยี่ยมบ้าน</span><strong>${d.groups}</strong></div>
-        <div class="info-row"><span>สถานะ</span><strong>ปิดปีการศึกษาแล้ว</strong></div>
-      </div>`;
-  }catch(err){toast(err.message)}
-};
