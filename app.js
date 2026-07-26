@@ -274,10 +274,45 @@ function showStudentDetail(id){
 $("closeDialogBtn").onclick=()=>$("detailDialog").close();
 $("calculateRouteBtn").onclick=()=>showView("route-options");
 document.querySelectorAll('input[name="routeMode"]').forEach(r=>r.onchange=()=>$("fixedSizeOptions").classList.toggle("hidden",r.value!=="fixed"||!r.checked));
-$("routeOptionsForm").addEventListener("submit",async e=>{
-  e.preventDefault();const mode=document.querySelector('input[name="routeMode"]:checked').value;let size=6;
-  if(mode==="fixed"){size=Number($("customGroupSize").value||document.querySelector('input[name="groupSize"]:checked')?.value||0);if(!size)return toast("กรุณาเลือกจำนวนหลังต่อกลุ่ม")}
-  try{const d=await api("calculateGroups",{mode,groupSize:size});state.groups=d.groups;renderGroups();showView("route-groups")}catch(err){toast(err.message)}
+$("routeOptionsForm").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const mode = document.querySelector(
+    'input[name="routeMode"]:checked'
+  ).value;
+
+  let size = 6;
+
+  if (mode === "fixed") {
+    size = Number(
+      $("customGroupSize").value ||
+      document.querySelector(
+        'input[name="groupSize"]:checked'
+      )?.value ||
+      0
+    );
+
+    if (!size) {
+      return toast("กรุณาเลือกจำนวนหลังต่อกลุ่ม");
+    }
+  }
+
+  try {
+    const data = await api("calculateGroups", {
+      mode,
+      groupSize: size
+    });
+
+    state.groups = (data.groups || []).map(group => ({
+      ...group,
+      members: [...(group.members || [])].reverse()
+    }));
+
+    renderGroups();
+    showView("route-groups");
+  } catch (error) {
+    toast(error.message);
+  }
 });
 function renderGroups(){
   const mapped=state.groups.reduce((n,g)=>n+g.members.length,0);$("routeSummary").innerHTML=`<div class="metric"><span>จำนวนกลุ่ม</span><strong>${state.groups.length}</strong></div><div class="metric"><span>บ้านทั้งหมด</span><strong>${mapped}</strong></div><div class="metric success"><span>จุดเริ่มต้น</span><strong style="font-size:18px">โรงเรียน</strong></div><div class="metric success"><span>จุดสิ้นสุด</span><strong style="font-size:18px">โรงเรียน</strong></div>`;
