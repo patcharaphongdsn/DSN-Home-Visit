@@ -39,6 +39,7 @@ const LOADING_MESSAGES = {
   getTeacherDashboard: ["กำลังโหลดข้อมูลนักเรียน", "กำลังตรวจสอบข้อมูลในห้องเรียน"],
   calculateGroups: ["กำลังคำนวณเส้นทาง", "กำลังจัดกลุ่มบ้านที่อยู่ในทิศทางเดียวกัน"],
   saveGroups: ["กำลังบันทึกแผนเยี่ยมบ้าน", "กรุณารอสักครู่"],
+  deleteVisitGroup: ["กำลังลบแผนเยี่ยมบ้าน","กรุณารอสักครู่"],
   completeVisitGroup: ["กำลังบันทึกผลการเยี่ยมบ้าน", "กรุณารอสักครู่"],
   getAdminDashboard: ["กำลังโหลดข้อมูลระบบ", "กรุณารอสักครู่"],
   setAcademicYear: ["กำลังเปลี่ยนปีการศึกษา", "กรุณารอสักครู่"],
@@ -400,22 +401,30 @@ function renderSavedGroups() {
       </div>
 
       <div class="saved-group-actions">
-        <button
-          class="ghost-btn open-saved-plan"
-          type="button"
-          data-group-id="${escapeHtml(group.groupId || "")}"
-        >
-          เปิดดูและแก้ไข
-        </button>
+  <button
+    class="ghost-btn open-saved-plan"
+    type="button"
+    data-group-id="${escapeHtml(group.groupId || "")}"
+  >
+    เปิดดูและแก้ไข
+  </button>
 
-        <button
-          class="primary-btn complete-visit-btn"
-          type="button"
-          data-group-id="${escapeHtml(group.groupId || "")}"
-        >
-          เยี่ยมบ้านเสร็จสิ้น
-        </button>
-      </div>
+  <button
+    class="primary-btn complete-visit-btn"
+    type="button"
+    data-group-id="${escapeHtml(group.groupId || "")}"
+  >
+    เยี่ยมบ้านเสร็จสิ้น
+  </button>
+
+  <button
+    class="delete-plan-btn delete-saved-plan"
+    type="button"
+    data-group-id="${escapeHtml(group.groupId || "")}"
+  >
+    ลบแผนนี้
+  </button>
+</div>
     </div>
   `).join("");
 
@@ -431,6 +440,11 @@ function renderSavedGroups() {
     };
   });
 }
+document.querySelectorAll(".delete-saved-plan").forEach(button => {
+  button.onclick = () => {
+    deleteSavedPlan(button.dataset.groupId);
+  };
+});
 
 function openSavedPlan(groupId) {
   const selectedGroup = (state.savedGroups || []).find(group =>
@@ -455,6 +469,35 @@ function openSavedPlan(groupId) {
 
   renderGroups();
   showView("route-groups");
+}
+async function deleteSavedPlan(groupId) {
+  const group = (state.savedGroups || []).find(item =>
+    String(item.groupId) === String(groupId)
+  );
+
+  if (!group) {
+    return toast("ไม่พบข้อมูลแผนเยี่ยมบ้าน");
+  }
+
+  const confirmed = confirm(
+    `ยืนยันลบแผน “${group.groupName || "กลุ่มเยี่ยมบ้าน"}” ?\n\n` +
+    `แผนและข้อมูลสมาชิกในกลุ่มนี้จะถูกลบออกจากชีตถาวร\n` +
+    `การลบไม่สามารถย้อนกลับได้`
+  );
+
+  if (!confirmed) return;
+
+  try {
+    await api("deleteVisitGroup", {
+      groupId: group.groupId
+    });
+
+    toast("ลบแผนเยี่ยมบ้านเรียบร้อยแล้ว");
+
+    await loadTeacher();
+  } catch (error) {
+    toast(error.message);
+  }
 }
 function openCompleteVisitDialog(groupId) {
   const group = (state.savedGroups || []).find(item =>
