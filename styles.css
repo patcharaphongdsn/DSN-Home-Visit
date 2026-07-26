@@ -195,3 +195,42 @@ body.is-loading textarea{
     margin-bottom:18px;
   }
 }
+.saved-group-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(20, 54, 42, 0.1);
+}
+
+.saved-group-row:last-child {
+  border-bottom: 0;
+}
+
+.saved-group-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.saved-group-row strong {
+  color: #173d2e;
+  font-size: 17px;
+}
+
+.saved-group-row span {
+  color: #71867d;
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .saved-group-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .saved-group-row .ghost-btn {
+    width: 100%;
+  }
+}
