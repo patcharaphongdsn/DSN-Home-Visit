@@ -229,10 +229,43 @@
         <div class="section-title"><div><h3>รายชื่อนักเรียน</h3><p>เรียงตามเลขที่จากน้อยไปมาก</p></div><input id="studentSearch" class="search-input" placeholder="ค้นหาชื่อนักเรียน"></div>
         <div class="table-wrap"><table><thead><tr><th>เลขที่</th><th>ชื่อ–สกุล</th><th>สถานะทีม</th><th>สถานะบ้าน</th><th></th></tr></thead><tbody id="studentTableBody"></tbody></table></div>
       </div>
-      <div id="savedGroupsSection" class="panel glass table-panel">
-        <div class="section-title"><div><h3>แผนเยี่ยมบ้านที่บันทึกไว้</h3><p>สามารถเปิดดูหรือแก้ไขกลุ่มเดิมได้</p></div></div>
-        <div id="savedGroups" class="group-list empty-state">ยังไม่มีแผนที่บันทึกไว้</div>
-      </div>
+      <div
+  id="completedGroupsSection"
+  class="panel glass table-panel hidden"
+>
+  <div class="section-title">
+    <div>
+      <h3>แผนบ้านที่เยี่ยมเสร็จแล้ว</h3>
+      <p>ข้อมูลการเยี่ยมบ้านที่ดำเนินการเสร็จสิ้นแล้ว</p>
+    </div>
+  </div>
+
+  <div
+    id="completedGroups"
+    class="group-list empty-state"
+  >
+    ยังไม่มีแผนที่เยี่ยมบ้านเสร็จแล้ว
+  </div>
+</div>
+
+<div
+  id="savedGroupsSection"
+  class="panel glass table-panel"
+>
+  <div class="section-title">
+    <div>
+      <h3>แผนเยี่ยมบ้านที่บันทึกไว้</h3>
+      <p>สามารถเปิดดู แก้ไข หรือบันทึกว่าเยี่ยมบ้านเสร็จแล้ว</p>
+    </div>
+  </div>
+
+  <div
+    id="savedGroups"
+    class="group-list empty-state"
+  >
+    ยังไม่มีแผนที่บันทึกไว้
+  </div>
+</div>
     </section>
 
     <section id="view-route-options" class="view">
@@ -404,7 +437,102 @@
   </div>
 
   <div id="toast" class="toast"></div>
+<dialog id="completeVisitDialog">
+  <form
+    id="completeVisitForm"
+    class="dialog-card"
+    method="dialog"
+  >
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow">COMPLETE HOME VISIT</p>
+        <h3>บันทึกการเยี่ยมบ้านเสร็จสิ้น</h3>
+      </div>
 
+      <button
+        id="closeCompleteVisitDialogBtn"
+        class="icon-btn"
+        type="button"
+        aria-label="ปิด"
+      >
+        ×
+      </button>
+    </div>
+
+    <div class="dialog-body">
+      <input
+        id="completeVisitGroupId"
+        type="hidden"
+      >
+
+      <div
+        id="completeVisitGroupSummary"
+        class="notice"
+      >
+        กรุณาเลือกกลุ่มเยี่ยมบ้าน
+      </div>
+
+      <label>
+        วันที่เยี่ยมบ้าน
+
+        <input
+          id="completeVisitDate"
+          type="date"
+          required
+        >
+      </label>
+
+      <p class="muted-text">
+        เมื่อยืนยัน กลุ่มนี้จะถูกย้ายไปยังหัวข้อ
+        “แผนบ้านที่เยี่ยมเสร็จแล้ว”
+      </p>
+    </div>
+
+    <div class="dialog-actions">
+      <button
+        id="cancelCompleteVisitBtn"
+        class="ghost-btn"
+        type="button"
+      >
+        ยกเลิก
+      </button>
+
+      <button
+        class="primary-btn"
+        type="submit"
+      >
+        ยืนยันว่าเยี่ยมบ้านเสร็จแล้ว
+      </button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="completedVisitDetailDialog">
+  <div class="dialog-card">
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow">COMPLETED VISIT</p>
+        <h3 id="completedVisitDetailTitle">
+          รายละเอียดการเยี่ยมบ้าน
+        </h3>
+      </div>
+
+      <button
+        id="closeCompletedVisitDetailBtn"
+        class="icon-btn"
+        type="button"
+        aria-label="ปิด"
+      >
+        ×
+      </button>
+    </div>
+
+    <div
+      id="completedVisitDetailBody"
+      class="dialog-body"
+    ></div>
+  </div>
+</dialog>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="app.js?v=20260726-11"></script>
 </body>
