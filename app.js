@@ -506,8 +506,8 @@ async function setTemporaryPassword(email) {
   }
 
   const temporaryPassword = prompt(
-    `ตั้งรหัสผ่านชั่วคราวสำหรับ ${account.email}\nต้องมีอย่างน้อย 8 ตัวอักษร`
-  );
+  `ตั้งรหัสผ่านชั่วคราวสำหรับ ${account.email}\nต้องมีอย่างน้อย 8 ตัวอักษร`
+);
 
   if (temporaryPassword === null) return;
 
