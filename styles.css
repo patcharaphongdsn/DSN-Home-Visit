@@ -465,3 +465,44 @@ body.is-loading textarea{
     width: 100%;
   }
 }
+/* ปรับปุ่มแผนเยี่ยมบ้านให้เล็กและเท่ากัน */
+.saved-group-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: auto;
+}
+
+.saved-group-actions button,
+.saved-group-actions .ghost-btn,
+.saved-group-actions .primary-btn,
+.saved-group-actions .delete-plan-btn {
+  flex: 0 0 150px;
+  width: 150px;
+  min-height: 44px;
+  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+@media (max-width: 700px) {
+  .saved-group-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .saved-group-actions button,
+  .saved-group-actions .ghost-btn,
+  .saved-group-actions .primary-btn,
+  .saved-group-actions .delete-plan-btn {
+    flex: 0 0 140px;
+    width: 140px;
+    min-height: 42px;
+  }
+}
