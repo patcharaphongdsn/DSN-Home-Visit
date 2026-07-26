@@ -351,11 +351,12 @@ function renderAccounts(list) {
             </button>
 
             <button
-              class="ghost-btn temporary-password"
-              data-email="${email}"
-              type="button">
-              รหัสชั่วคราว
-            </button>
+  class="ghost-btn temporary-password"
+  data-user-id="${escapeHtml(account.userId || "")}"
+  data-email="${email}"
+  type="button">
+  รหัสชั่วคราว
+</button>
 
             <button
               class="danger-btn delete-account"
@@ -373,9 +374,12 @@ function renderAccounts(list) {
     button.onclick = () => openEditAccount(button.dataset.email);
   });
 
-  document.querySelectorAll(".temporary-password").forEach(button => {
-    button.onclick = () => setTemporaryPassword(button.dataset.email);
-  });
+document.querySelectorAll(".temporary-password").forEach(button => {
+  button.onclick = () => setTemporaryPassword(
+    button.dataset.userId,
+    button.dataset.email
+  );
+});
 
   document.querySelectorAll(".delete-account").forEach(button => {
     button.onclick = () => deleteMemberAccount(button.dataset.email);
@@ -498,16 +502,26 @@ $("editAccountForm").onsubmit = async event => {
   }
 };
 
-async function setTemporaryPassword(email) {
-  const account = findAccount(email);
+async function setTemporaryPassword(userId, email) {
+  const account = state.accounts.find(item =>
+    String(item.userId || "") === String(userId || "") &&
+    String(item.email || "").toLowerCase() === String(email || "").toLowerCase()
+  );
 
   if (!account) {
-    return toast("ไม่พบบัญชีเป้าหมาย");
+    return toast("ข้อมูลบัญชีเป้าหมายไม่ตรงกัน กรุณาโหลดหน้าใหม่");
+  }
+
+  if (
+    state.user &&
+    String(account.userId) === String(state.user.userId)
+  ) {
+    return toast("ไม่สามารถตั้งรหัสชั่วคราวให้บัญชีแอดมินที่กำลังใช้งานอยู่");
   }
 
   const temporaryPassword = prompt(
-  `ตั้งรหัสผ่านชั่วคราวสำหรับ ${account.email}\nต้องมีอย่างน้อย 8 ตัวอักษร`
-);
+    `ตั้งรหัสผ่านชั่วคราวสำหรับ ${account.email}\nต้องมีอย่างน้อย 8 ตัวอักษร`
+  );
 
   if (temporaryPassword === null) return;
 
@@ -516,14 +530,21 @@ async function setTemporaryPassword(email) {
   }
 
   try {
-    await api("setTemporaryPassword", {
+    const result = await api("setTemporaryPassword", {
+      targetUserId: account.userId,
       targetEmail: account.email,
       temporaryPassword
     });
 
-    toast(
-      `ตั้งรหัสผ่านชั่วคราวให้ ${account.email} เรียบร้อยแล้ว`
-    );
+    if (
+      String(result.targetUserId) !== String(account.userId) ||
+      String(result.targetEmail).toLowerCase() !==
+      String(account.email).toLowerCase()
+    ) {
+      throw new Error("ระบบตอบกลับบัญชีไม่ตรงกับบัญชีเป้าหมาย");
+    }
+
+    toast(`ตั้งรหัสผ่านชั่วคราวให้ ${account.email} เรียบร้อยแล้ว`);
   } catch (error) {
     toast(error.message);
   }
