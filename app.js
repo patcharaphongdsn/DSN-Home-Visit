@@ -439,13 +439,13 @@ function renderSavedGroups() {
       openCompleteVisitDialog(button.dataset.groupId);
     };
   });
-}
-document.querySelectorAll(".delete-saved-plan").forEach(button => {
-  button.onclick = () => {
-    deleteSavedPlan(button.dataset.groupId);
-  };
-});
 
+  document.querySelectorAll(".delete-saved-plan").forEach(button => {
+    button.onclick = () => {
+      deleteSavedPlan(button.dataset.groupId);
+    };
+  });
+}
 function openSavedPlan(groupId) {
   const selectedGroup = (state.savedGroups || []).find(group =>
     String(group.groupId) === String(groupId)
