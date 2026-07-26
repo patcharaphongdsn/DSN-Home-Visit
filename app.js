@@ -334,7 +334,6 @@ function renderAccounts(list) {
         <div class="admin-actions">
           <button class="ghost-btn edit-account" data-user-id="${a.userId}">แก้ไข</button>
           <button class="ghost-btn temp-password" data-user-id="${a.userId}">รหัสชั่วคราว</button>
-          <button class="ghost-btn toggle-account" data-user-id="${a.userId}">${a.status === "Active" ? "ระงับ" : "เปิดใช้งาน"}</button>
           <button class="danger-btn delete-account" data-user-id="${a.userId}">ลบ</button>
         </div>
       </td>
@@ -346,7 +345,6 @@ function renderAccounts(list) {
 function bindAdminAccountButtons() {
   document.querySelectorAll(".edit-account").forEach(btn => btn.onclick = () => openEditAccount(btn.dataset.userId));
   document.querySelectorAll(".temp-password").forEach(btn => btn.onclick = () => setTemporaryPassword(btn.dataset.userId));
-  document.querySelectorAll(".toggle-account").forEach(btn => btn.onclick = () => toggleMemberAccount(btn.dataset.userId));
   document.querySelectorAll(".delete-account").forEach(btn => btn.onclick = () => deleteMemberAccount(btn.dataset.userId));
 }
 
@@ -357,6 +355,7 @@ function findAccount(userId) {
 function openEditAccount(userId) {
   const a = findAccount(userId);
   if (!a) return toast("ไม่พบข้อมูลสมาชิก");
+
   $("editUserId").value = a.userId;
   $("editEmail").value = a.email || "";
   $("editFirstName").value = a.firstName || "";
@@ -364,26 +363,70 @@ function openEditAccount(userId) {
   $("editGradeLevel").value = a.gradeLevel || "";
   $("editClassroom").value = a.classroom || "";
   $("editNumberInClass").value = a.numberInClass || "";
+
+  const title = $("editAccountDialog").querySelector("h3");
+  const firstNameLabel = $("editFirstName").closest("label");
+  const lastNameLabel = $("editLastName").closest("label");
+  const gradeLabel = $("editGradeLevel").closest("label");
+  const classroomLabel = $("editClassroom").closest("label");
+  const numberLabel = $("editNumberInClass").closest("label");
+
+  [firstNameLabel,lastNameLabel,gradeLabel,classroomLabel,numberLabel]
+    .forEach(el => el && el.classList.remove("hidden"));
+
+  if (a.role === "student") {
+    title.textContent = "แก้ไขข้อมูลนักเรียน";
+    numberLabel.classList.remove("hidden");
+  } else if (a.role === "teacher") {
+    title.textContent = "แก้ไขข้อมูลครู";
+    numberLabel.classList.add("hidden");
+    $("editNumberInClass").value = "";
+  } else {
+    title.textContent = "แก้ไขบัญชีผู้ดูแลระบบ";
+    [firstNameLabel,lastNameLabel,gradeLabel,classroomLabel,numberLabel]
+      .forEach(el => el && el.classList.add("hidden"));
+  }
+
   $("editAccountDialog").showModal();
 }
 
 $("closeEditAccountBtn").onclick = () => $("editAccountDialog").close();
 $("editAccountForm").onsubmit = async e => {
   e.preventDefault();
+
+  const userId = $("editUserId").value;
+  const account = findAccount(userId);
+  if (!account) return toast("ไม่พบข้อมูลสมาชิก");
+
   try {
-    await api("updateAccount", {
-      userId: $("editUserId").value,
-      email: $("editEmail").value.trim(),
-      firstName: $("editFirstName").value.trim(),
-      lastName: $("editLastName").value.trim(),
-      gradeLevel: $("editGradeLevel").value,
-      classroom: $("editClassroom").value,
-      numberInClass: $("editNumberInClass").value
-    });
+    const payload = {
+      userId,
+      role: account.role,
+      email: $("editEmail").value.trim()
+    };
+
+    if (account.role === "teacher" || account.role === "student") {
+      payload.firstName = $("editFirstName").value.trim();
+      payload.lastName = $("editLastName").value.trim();
+      payload.gradeLevel = $("editGradeLevel").value;
+      payload.classroom = $("editClassroom").value;
+    }
+
+    if (account.role === "student") {
+      payload.numberInClass = $("editNumberInClass").value;
+    }
+
+    await api("updateAccount", payload);
     $("editAccountDialog").close();
-    toast("แก้ไขข้อมูลสมาชิกเรียบร้อยแล้ว");
+    toast(account.role === "student"
+      ? "แก้ไขข้อมูลนักเรียนเรียบร้อยแล้ว"
+      : account.role === "teacher"
+        ? "แก้ไขข้อมูลครูเรียบร้อยแล้ว"
+        : "แก้ไขบัญชีผู้ดูแลระบบเรียบร้อยแล้ว");
     await loadAdmin();
-  } catch (err) { toast(err.message); }
+  } catch (err) {
+    toast(err.message);
+  }
 };
 
 async function setTemporaryPassword(userId) {
@@ -398,18 +441,11 @@ async function setTemporaryPassword(userId) {
   } catch (err) { toast(err.message); }
 }
 
-async function toggleMemberAccount(userId) {
-  try {
-    await api("toggleAccount", {userId});
-    toast("อัปเดตสถานะบัญชีเรียบร้อยแล้ว");
-    await loadAdmin();
-  } catch (err) { toast(err.message); }
-}
-
 async function deleteMemberAccount(userId) {
   const a = findAccount(userId);
   if (!a) return toast("ไม่พบข้อมูลสมาชิก");
-  if (!confirm(`ยืนยันลบบัญชี ${a.email} ?\nการลบไม่สามารถย้อนกลับได้`)) return;
+  const roleText = a.role === "student" ? "นักเรียน" : a.role === "teacher" ? "ครู" : "ผู้ดูแลระบบ";
+  if (!confirm(`ยืนยันลบบัญชี${roleText} ${a.email} ?\nข้อมูลที่เกี่ยวข้องกับบัญชีนี้จะถูกลบและไม่สามารถย้อนกลับได้`)) return;
   try {
     await api("deleteAccount", {userId});
     toast("ลบบัญชีเรียบร้อยแล้ว");
