@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=20260726-6" />
 </head>
 <body>
   <div class="ambient ambient-a"></div>
@@ -18,7 +18,7 @@
   <header class="topbar glass">
     <button id="backBtn" class="icon-btn hidden" aria-label="ย้อนกลับ">←</button>
     <div class="brand">
-      <div class="brand-mark">DSN</div>
+      <div class="brand-mark logo-mark"><img src="https://raw.githubusercontent.com/patcharaphongdsn/Maennaruemit-teachers-duty/refs/heads/main/Logo_Blue-700x639.png" alt="ตราโรงเรียนเทพศิรินทร์ นนทบุรี"></div>
       <div>
         <strong>ระบบเยี่ยมบ้านนักเรียน</strong>
         <span>โรงเรียนเทพศิรินทร์ นนทบุรี</span>
@@ -33,29 +33,26 @@
   <main id="app" class="app-shell">
     <section id="view-home" class="view active">
       <div class="hero">
+        <img class="hero-school-logo" src="https://raw.githubusercontent.com/patcharaphongdsn/Maennaruemit-teachers-duty/refs/heads/main/Logo_Blue-700x639.png" alt="ตราโรงเรียนเทพศิรินทร์ นนทบุรี">
         <p class="eyebrow">STUDENT HOME VISIT SYSTEM</p>
         <h1>ระบบเยี่ยมบ้าน<br>โรงเรียนเทพศิรินทร์ นนทบุรี</h1>
-        <p class="hero-copy">ลงทะเบียน ปักหมุดบ้าน ตรวจสอบสถานะ และวางแผนเส้นทางเยี่ยมบ้านด้วยข้อมูลจริงจากระบบ</p>
+        <p class="hero-copy">สงวนสิทธิ์โดย นายพัชรพงศ์ มะลิกุล ตรองจิตต์ สนใจระบบติดต่อ <a href="mailto:patcharaphongdsn@gmail.com">patcharaphongdsn@gmail.com</a> หรือ Line ID <strong>pararees</strong></p>
       </div>
 
       <div class="portal-grid">
         <button class="portal-card" data-go="login-student">
-          <span class="portal-icon">นร.</span>
           <div><strong>นักเรียน</strong><small>เข้าสู่ระบบและปักหมุดบ้าน</small></div>
           <span>→</span>
         </button>
         <button class="portal-card" data-go="login-teacher">
-          <span class="portal-icon">ครู</span>
           <div><strong>ครูที่ปรึกษา</strong><small>ตรวจสอบทีมและจัดกลุ่มเส้นทาง</small></div>
           <span>→</span>
         </button>
         <button class="portal-card" data-go="register">
-          <span class="portal-icon">+</span>
           <div><strong>สมัครสมาชิก</strong><small>สร้างบัญชีนักเรียนหรือครู</small></div>
           <span>→</span>
         </button>
         <button class="portal-card subtle" data-go="login-admin">
-          <span class="portal-icon">A</span>
           <div><strong>ผู้ดูแลระบบ</strong><small>จัดการบัญชีและปีการศึกษา</small></div>
           <span>→</span>
         </button>
@@ -269,36 +266,146 @@
       <div id="routeGroups" class="route-groups"></div>
     </section>
 
+    
     <section id="view-admin" class="view">
       <div class="dashboard-head">
-        <div><p class="eyebrow">ADMIN DASHBOARD</p><h2>ผู้ดูแลระบบ</h2><p>จัดการบัญชี ปีการศึกษา และการตั้งค่าระบบ</p></div>
+        <div>
+          <p class="eyebrow">ADMIN DASHBOARD</p>
+          <h2>ผู้ดูแลระบบ</h2>
+          <p>จัดการบัญชี แก้ไขข้อมูล ตั้งรหัสชั่วคราว ลบบัญชี ปิดปีการศึกษา และดูข้อมูลย้อนหลัง</p>
+        </div>
       </div>
+
       <div class="admin-grid">
         <article class="panel glass">
           <h3>ปีการศึกษาปัจจุบัน</h3>
-          <p>การเปลี่ยนปีจะใช้กับการลงทะเบียนใหม่และการแสดงผลในระบบ</p>
-          <form id="academicYearForm" class="inline-form"><input id="academicYearInput" type="number" min="2560" max="2600"><button class="primary-btn">เปลี่ยนปีการศึกษา</button></form>
+          <p>ปีที่กำลังเปิดใช้งานอยู่ในระบบ</p>
+          <div class="info-row"><span>ปีการศึกษาปัจจุบัน</span><strong id="currentAcademicYearText">-</strong></div>
+          <button id="openCloseYearBtn" class="primary-btn">ปิดปีการศึกษาปัจจุบัน</button>
         </article>
+
         <article class="panel glass">
           <h3>ภาพรวมระบบ</h3>
           <div id="adminMetrics" class="info-stack"></div>
         </article>
       </div>
+
       <div class="panel glass table-panel">
-        <div class="section-title"><div><h3>บัญชีสมาชิก</h3><p>เปิด ปิด หรือค้นหาบัญชีสมาชิก</p></div><input id="accountSearch" class="search-input" placeholder="ค้นหาอีเมลหรือชื่อ"></div>
-        <div class="table-wrap"><table><thead><tr><th>อีเมล</th><th>บทบาท</th><th>ชื่อ</th><th>ห้อง</th><th>สถานะ</th><th></th></tr></thead><tbody id="accountTableBody"></tbody></table></div>
+        <div class="section-title">
+          <div><h3>บัญชีสมาชิก</h3><p>ค้นหา แก้ไข ตั้งรหัสผ่านชั่วคราว หรือลบบัญชีที่สมัครผิด</p></div>
+          <input id="accountSearch" class="search-input" placeholder="ค้นหาอีเมลหรือชื่อ">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>อีเมล</th><th>บทบาท</th><th>ชื่อ</th><th>ห้อง</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+            <tbody id="accountTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel glass table-panel">
+        <div class="section-title">
+          <div><h3>ข้อมูลย้อนหลัง</h3><p>เปิดดูปีการศึกษาที่ปิดแล้ว</p></div>
+          <select id="archiveYearSelect"><option value="">เลือกปีการศึกษา</option></select>
+        </div>
+        <div id="archiveSummary" class="empty-state">ยังไม่ได้เลือกปีการศึกษา</div>
       </div>
     </section>
+
   </main>
 
+
+  <dialog id="passwordChangeDialog" class="password-dialog">
+    <form id="passwordChangeForm">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">SECURITY UPDATE</p>
+          <h3>ตั้งรหัสผ่านใหม่</h3>
+        </div>
+      </div>
+      <div class="password-dialog-body">
+        <p>ผู้ดูแลระบบได้ตั้งรหัสผ่านชั่วคราวให้บัญชีนี้ กรุณาตั้งรหัสผ่านใหม่ของคุณก่อนเข้าใช้งานระบบ</p>
+        <label>รหัสผ่านใหม่
+          <input id="newOwnPassword" type="password" minlength="8" autocomplete="new-password" required>
+        </label>
+        <label>ยืนยันรหัสผ่านใหม่
+          <input id="confirmOwnPassword" type="password" minlength="8" autocomplete="new-password" required>
+        </label>
+        <button class="primary-btn" type="submit">บันทึกรหัสผ่านใหม่</button>
+      </div>
+    </form>
+  </dialog>
+
+
+  <dialog id="closeYearDialog">
+    <form id="closeYearForm">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">CLOSE ACADEMIC YEAR</p>
+          <h3>ปิดปีการศึกษา</h3>
+        </div>
+        <button id="closeYearDialogBtn" class="icon-btn" type="button">×</button>
+      </div>
+      <div class="password-dialog-body">
+        <div id="closeYearPreview" class="info-stack"></div>
+        <div class="notice">
+          ระบบจะสำรองไฟล์ก่อนดำเนินการ ล็อกข้อมูลปีเก่า เลื่อนชั้นนักเรียน ม.1–ม.5
+          เปลี่ยน ม.6 เป็นศิษย์เก่า และให้ครู–นักเรียนยืนยันข้อมูลใหม่เมื่อเข้าสู่ระบบ
+        </div>
+        <div class="action-row">
+          <button id="cancelCloseYearBtn" class="ghost-btn" type="button">ยกเลิก</button>
+          <button class="danger-btn" type="submit">ยืนยันปิดปีการศึกษา</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="editAccountDialog">
+    <form id="editAccountForm">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">EDIT MEMBER</p>
+          <h3>แก้ไขข้อมูลสมาชิก</h3>
+        </div>
+        <button id="closeEditAccountBtn" class="icon-btn" type="button">×</button>
+      </div>
+      <div class="password-dialog-body">
+        <input id="editUserId" type="hidden">
+        <label>อีเมล<input id="editEmail" type="email" required></label>
+        <label>ชื่อ<input id="editFirstName" required></label>
+        <label>นามสกุล<input id="editLastName" required></label>
+        <label>ระดับชั้น
+          <select id="editGradeLevel">
+            <option value="">ไม่ระบุ</option>
+            <option value="M1">ม.1</option><option value="M2">ม.2</option><option value="M3">ม.3</option>
+            <option value="M4">ม.4</option><option value="M5">ม.5</option><option value="M6">ม.6</option>
+          </select>
+        </label>
+        <label>ห้อง<input id="editClassroom" type="number" min="1" max="14"></label>
+        <label>เลขที่<input id="editNumberInClass" type="number" min="1" max="60"></label>
+        <button class="primary-btn" type="submit">บันทึกการแก้ไข</button>
+      </div>
+    </form>
+  </dialog>
   <dialog id="detailDialog">
     <div class="dialog-head"><h3 id="dialogTitle">รายละเอียด</h3><button id="closeDialogBtn" class="icon-btn">×</button></div>
     <div id="dialogBody"></div>
   </dialog>
 
+
+  <div id="loadingOverlay" class="loading-overlay hidden" role="status" aria-live="polite" aria-busy="true">
+    <div class="loading-card glass">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <div class="loading-copy">
+        <strong id="loadingTitle">กำลังโหลดข้อมูล</strong>
+        <span id="loadingMessage">กรุณารอสักครู่</span>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=20260726-6"></script>
 </body>
 </html>
