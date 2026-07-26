@@ -39,6 +39,7 @@ const LOADING_MESSAGES = {
   getTeacherDashboard: ["กำลังโหลดข้อมูลนักเรียน", "กำลังตรวจสอบข้อมูลในห้องเรียน"],
   calculateGroups: ["กำลังคำนวณเส้นทาง", "กำลังจัดกลุ่มบ้านที่อยู่ในทิศทางเดียวกัน"],
   saveGroups: ["กำลังบันทึกแผนเยี่ยมบ้าน", "กรุณารอสักครู่"],
+  completeVisitGroup: ["กำลังบันทึกผลการเยี่ยมบ้าน", "กรุณารอสักครู่"],
   getAdminDashboard: ["กำลังโหลดข้อมูลระบบ", "กรุณารอสักครู่"],
   setAcademicYear: ["กำลังเปลี่ยนปีการศึกษา", "กรุณารอสักครู่"],
   toggleAccount: ["กำลังอัปเดตบัญชี", "กรุณารอสักครู่"],
@@ -226,10 +227,32 @@ $("locationForm").addEventListener("submit",async e=>{
   try{await api("saveLocation",{location});state.profile.locationStatus="Submitted";toast("บันทึกข้อมูลบ้านเรียบร้อยแล้ว");await renderStudent();showView("student")}catch(err){toast(err.message)}
 });
 
-async function loadTeacher(){
-  const d=await api("getTeacherDashboard");state.students=d.students||[];state.savedGroups=d.groups||[];
-  const p=state.profile||{};$("teacherWelcome").textContent=`คุณครู ${p.firstName||""} ${p.lastName||""}`;$("teacherClass").textContent=`ครูที่ปรึกษาห้อง ${formatClass(p.classCode)}`;
-  renderStudentTable(state.students);renderSavedGroups();
+async function loadTeacher() {
+  const data = await api("getTeacherDashboard");
+
+  state.students = data.students || [];
+
+  const allGroups = data.groups || [];
+
+  state.savedGroups = allGroups.filter(group =>
+    String(group.groupStatus || "Confirmed") !== "Completed"
+  );
+
+  state.completedGroups = allGroups.filter(group =>
+    String(group.groupStatus) === "Completed"
+  );
+
+  const profile = state.profile || {};
+
+  $("teacherWelcome").textContent =
+    `คุณครู ${profile.firstName || ""} ${profile.lastName || ""}`;
+
+  $("teacherClass").textContent =
+    `ครูที่ปรึกษาห้อง ${formatClass(profile.classCode)}`;
+
+  renderStudentTable(state.students);
+  renderSavedGroups();
+  renderCompletedGroups();
 }
 function renderStudentTable(list){
   const sorted=[...list].sort((a,b)=>Number(a.numberInClass)-Number(b.numberInClass));
@@ -351,38 +374,77 @@ $("saveGroupsBtn").onclick = async () => {
 
 function renderSavedGroups() {
   const container = $("savedGroups");
+  const section = $("savedGroupsSection");
+  const groups = state.savedGroups || [];
 
-  if (!state.savedGroups?.length) {
+  if (!groups.length) {
+    section?.classList.remove("hidden");
     container.className = "group-list empty-state";
     container.textContent = "ยังไม่มีแผนที่บันทึกไว้";
     return;
   }
 
+  section?.classList.remove("hidden");
   container.className = "group-list";
 
-  container.innerHTML = `
-    ${state.savedGroups.map((group, index) => `
-      <div class="saved-group-row">
-        <div>
-          <strong>${escapeHtml(group.groupName || `กลุ่มที่ ${index + 1}`)}</strong>
-          <span>${group.members?.length || 0} หลัง</span>
-        </div>
+  container.innerHTML = groups.map((group, index) => `
+    <div class="saved-group-row">
+      <div class="saved-group-info">
+        <strong>
+          ${escapeHtml(group.groupName || `กลุ่มที่ ${index + 1}`)}
+        </strong>
 
+        <span>
+          ${group.members?.length || 0} หลัง
+        </span>
+      </div>
+
+      <div class="saved-group-actions">
         <button
           class="ghost-btn open-saved-plan"
           type="button"
+          data-group-id="${escapeHtml(group.groupId || "")}"
         >
           เปิดดูและแก้ไข
         </button>
+
+        <button
+          class="primary-btn complete-visit-btn"
+          type="button"
+          data-group-id="${escapeHtml(group.groupId || "")}"
+        >
+          เยี่ยมบ้านเสร็จสิ้น
+        </button>
       </div>
-    `).join("")}
-  `;
+    </div>
+  `).join("");
 
   document.querySelectorAll(".open-saved-plan").forEach(button => {
-    button.onclick = openSavedPlan;
+    button.onclick = () => {
+      openSavedPlan(button.dataset.groupId);
+    };
+  });
+
+  document.querySelectorAll(".complete-visit-btn").forEach(button => {
+    button.onclick = () => {
+      openCompleteVisitDialog(button.dataset.groupId);
+    };
   });
 }
-function openSavedPlan() {
+
+function openSavedPlan(groupId) {
+  const selectedGroup = (state.savedGroups || []).find(group =>
+    String(group.groupId) === String(groupId)
+  );
+
+  if (!selectedGroup) {
+    return toast("ไม่พบข้อมูลแผนเยี่ยมบ้าน");
+  }
+
+  /*
+    เปิดทั้งชุด เพื่อให้ยังสามารถลากนักเรียน
+    หรือย้ายข้ามกลุ่มได้เหมือนเดิม
+  */
   state.groups = (state.savedGroups || []).map(group => ({
     groupId: group.groupId,
     groupName: group.groupName,
@@ -391,12 +453,258 @@ function openSavedPlan() {
     }))
   }));
 
-  if (!state.groups.length) {
-    return toast("ไม่พบข้อมูลแผนเยี่ยมบ้าน");
-  }
-
   renderGroups();
   showView("route-groups");
+}
+function openCompleteVisitDialog(groupId) {
+  const group = (state.savedGroups || []).find(item =>
+    String(item.groupId) === String(groupId)
+  );
+
+  if (!group) {
+    return toast("ไม่พบกลุ่มเยี่ยมบ้าน");
+  }
+
+  $("completeVisitGroupId").value = group.groupId;
+
+  $("completeVisitGroupSummary").innerHTML = `
+    <strong>${escapeHtml(group.groupName || "กลุ่มเยี่ยมบ้าน")}</strong>
+    <span>${group.members?.length || 0} หลัง</span>
+  `;
+
+  /*
+    ใส่วันที่ปัจจุบันให้อัตโนมัติ
+    แต่ครูยังแก้วันได้
+  */
+  $("completeVisitDate").value = getLocalDateInputValue();
+
+  $("completeVisitDialog").showModal();
+}
+
+function getLocalDateInputValue(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+$("closeCompleteVisitDialogBtn").onclick = () => {
+  $("completeVisitDialog").close();
+};
+
+$("cancelCompleteVisitBtn").onclick = () => {
+  $("completeVisitDialog").close();
+};
+
+$("completeVisitForm").onsubmit = async event => {
+  event.preventDefault();
+
+  const groupId = $("completeVisitGroupId").value;
+  const visitDate = $("completeVisitDate").value;
+
+  if (!groupId) {
+    return toast("ไม่พบกลุ่มเยี่ยมบ้าน");
+  }
+
+  if (!visitDate) {
+    return toast("กรุณาเลือกวันที่เยี่ยมบ้าน");
+  }
+
+  const group = (state.savedGroups || []).find(item =>
+    String(item.groupId) === String(groupId)
+  );
+
+  if (!group) {
+    return toast("ไม่พบข้อมูลกลุ่มเยี่ยมบ้าน");
+  }
+
+  const confirmed = confirm(
+    `ยืนยันว่าเยี่ยมบ้าน “${group.groupName}” เสร็จแล้ว\nวันที่ ${formatThaiDate(visitDate)}`
+  );
+
+  if (!confirmed) return;
+
+  try {
+    await api("completeVisitGroup", {
+      groupId,
+      visitDate
+    });
+
+    $("completeVisitDialog").close();
+
+    toast("บันทึกการเยี่ยมบ้านเสร็จสิ้นแล้ว");
+
+    await loadTeacher();
+  } catch (error) {
+    toast(error.message);
+  }
+};
+
+function renderCompletedGroups() {
+  const section = $("completedGroupsSection");
+  const container = $("completedGroups");
+  const groups = state.completedGroups || [];
+
+  if (!groups.length) {
+    section?.classList.add("hidden");
+    container.className = "group-list empty-state";
+    container.textContent = "ยังไม่มีแผนที่เยี่ยมบ้านเสร็จแล้ว";
+    return;
+  }
+
+  section?.classList.remove("hidden");
+  container.className = "group-list";
+
+  container.innerHTML = groups.map((group, index) => `
+    <div class="saved-group-row completed-group-row">
+      <div class="saved-group-info">
+        <strong>
+          ${escapeHtml(group.groupName || `กลุ่มที่ ${index + 1}`)}
+        </strong>
+
+        <span>
+          ${group.members?.length || 0} หลัง
+          · เยี่ยมวันที่ ${formatThaiDate(group.visitDate)}
+        </span>
+      </div>
+
+      <div class="saved-group-actions">
+        <button
+          class="ghost-btn open-completed-visit"
+          type="button"
+          data-group-id="${escapeHtml(group.groupId || "")}"
+        >
+          เปิดดูข้อมูล
+        </button>
+      </div>
+    </div>
+  `).join("");
+
+  document.querySelectorAll(".open-completed-visit").forEach(button => {
+    button.onclick = () => {
+      openCompletedVisitDetail(button.dataset.groupId);
+    };
+  });
+}
+
+function openCompletedVisitDetail(groupId) {
+  const group = (state.completedGroups || []).find(item =>
+    String(item.groupId) === String(groupId)
+  );
+
+  if (!group) {
+    return toast("ไม่พบข้อมูลการเยี่ยมบ้าน");
+  }
+
+  $("completedVisitDetailTitle").textContent =
+    group.groupName || "รายละเอียดการเยี่ยมบ้าน";
+
+  const members = group.members || [];
+
+  $("completedVisitDetailBody").innerHTML = `
+    <div class="info-stack">
+      <div class="info-row">
+        <span>วันที่เยี่ยมบ้าน</span>
+        <strong>${formatThaiDate(group.visitDate)}</strong>
+      </div>
+
+      <div class="info-row">
+        <span>จำนวนบ้าน</span>
+        <strong>${members.length} หลัง</strong>
+      </div>
+    </div>
+
+    <div class="completed-member-list">
+      ${members.map((member, index) => `
+        <div class="completed-member-item">
+          <div>
+            <strong>
+              ${index + 1}.
+              ${escapeHtml(member.firstName || "")}
+              ${escapeHtml(member.lastName || "")}
+            </strong>
+
+            <span>
+              เลขที่ ${escapeHtml(member.numberInClass || "-")}
+            </span>
+          </div>
+
+          <small>
+            ${escapeHtml(member.address || member.district || "-")}
+          </small>
+        </div>
+      `).join("")}
+    </div>
+
+    ${
+      members.some(member =>
+        Number.isFinite(Number(member.latitude)) &&
+        Number.isFinite(Number(member.longitude))
+      )
+        ? `
+          <a
+            class="primary-btn completed-map-link"
+            target="_blank"
+            rel="noopener"
+            href="${googleMapsRoute(members)}"
+          >
+            เปิดเส้นทางย้อนหลังใน Google Maps
+          </a>
+        `
+        : ""
+    }
+  `;
+
+  $("completedVisitDetailDialog").showModal();
+}
+
+$("closeCompletedVisitDetailBtn").onclick = () => {
+  $("completedVisitDetailDialog").close();
+};
+
+function formatThaiDate(value) {
+  if (!value) return "-";
+
+  const text = String(value);
+  const datePart = text.includes("T")
+    ? text.split("T")[0]
+    : text;
+
+  const parts = datePart.split("-");
+
+  if (parts.length !== 3) {
+    return escapeHtml(text);
+  }
+
+  const year = Number(parts[0]);
+  const month = Number(parts[1]);
+  const day = Number(parts[2]);
+
+  const months = [
+    "มกราคม",
+    "กุมภาพันธ์",
+    "มีนาคม",
+    "เมษายน",
+    "พฤษภาคม",
+    "มิถุนายน",
+    "กรกฎาคม",
+    "สิงหาคม",
+    "กันยายน",
+    "ตุลาคม",
+    "พฤศจิกายน",
+    "ธันวาคม"
+  ];
+
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day) ||
+    !months[month - 1]
+  ) {
+    return escapeHtml(text);
+  }
+
+  return `${day} ${months[month - 1]} ${year + 543}`;
 }
 
 async function loadAdmin() {
