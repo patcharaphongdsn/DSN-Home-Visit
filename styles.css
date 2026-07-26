@@ -427,3 +427,41 @@ body.is-loading textarea{
     width: 100%;
   }
 }
+.saved-group-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
+  gap: 10px;
+  width: min(100%, 560px);
+}
+
+.saved-group-actions button {
+  width: 100%;
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.delete-plan-btn {
+  border: 1px solid rgba(185, 58, 67, 0.18);
+  border-radius: 999px;
+  padding: 13px 20px;
+  background: rgba(185, 58, 67, 0.1);
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.delete-plan-btn:hover {
+  background: var(--danger);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(185, 58, 67, 0.18);
+}
+
+@media (max-width: 850px) {
+  .saved-group-actions {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+}
