@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f7faf8" />
+  <title>ระบบเยี่ยมบ้านนักเรียน | โรงเรียนเทพศิรินทร์ นนทบุรี</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="styles.css?v=20260726-4" />
+</head>
+<body>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+
+  <header class="topbar glass">
+    <button id="backBtn" class="icon-btn hidden" aria-label="ย้อนกลับ">←</button>
+    <div class="brand">
+      <div class="brand-mark">DSN</div>
+      <div>
+        <strong>ระบบเยี่ยมบ้านนักเรียน</strong>
+        <span>โรงเรียนเทพศิรินทร์ นนทบุรี</span>
+      </div>
+    </div>
+    <div id="userMenu" class="user-menu hidden">
+      <span id="activeYearBadge" class="badge">ปีการศึกษา 2569</span>
+      <button id="logoutBtn" class="ghost-btn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <main id="app" class="app-shell">
+    <section id="view-home" class="view active">
+      <div class="hero">
+        <p class="eyebrow">STUDENT HOME VISIT SYSTEM</p>
+        <h1>ระบบเยี่ยมบ้าน<br>โรงเรียนเทพศิรินทร์ นนทบุรี</h1>
+        <p class="hero-copy">ลงทะเบียน ปักหมุดบ้าน ตรวจสอบสถานะ และวางแผนเส้นทางเยี่ยมบ้านด้วยข้อมูลจริงจากระบบ</p>
+      </div>
+
+      <div class="portal-grid">
+        <button class="portal-card" data-go="login-student">
+          <span class="portal-icon">นร.</span>
+          <div><strong>นักเรียน</strong><small>เข้าสู่ระบบและปักหมุดบ้าน</small></div>
+          <span>→</span>
+        </button>
+        <button class="portal-card" data-go="login-teacher">
+          <span class="portal-icon">ครู</span>
+          <div><strong>ครูที่ปรึกษา</strong><small>ตรวจสอบทีมและจัดกลุ่มเส้นทาง</small></div>
+          <span>→</span>
+        </button>
+        <button class="portal-card" data-go="register">
+          <span class="portal-icon">+</span>
+          <div><strong>สมัครสมาชิก</strong><small>สร้างบัญชีนักเรียนหรือครู</small></div>
+          <span>→</span>
+        </button>
+        <button class="portal-card subtle" data-go="login-admin">
+          <span class="portal-icon">A</span>
+          <div><strong>ผู้ดูแลระบบ</strong><small>จัดการบัญชีและปีการศึกษา</small></div>
+          <span>→</span>
+        </button>
+      </div>
+    </section>
+
+    <section id="view-auth" class="view">
+      <div class="auth-wrap">
+        <div class="auth-copy">
+          <p class="eyebrow" id="authEyebrow">เข้าสู่ระบบ</p>
+          <h2 id="authTitle">เข้าสู่ระบบนักเรียน</h2>
+          <p id="authDescription">กรอกอีเมลและรหัสผ่านเพื่อเข้าสู่ระบบ</p>
+        </div>
+        <form id="loginForm" class="panel glass form-panel">
+          <label>อีเมล<input id="loginEmail" type="email" autocomplete="email" required></label>
+          <label>รหัสผ่าน<input id="loginPassword" type="password" autocomplete="current-password" required></label>
+          <button class="primary-btn" type="submit">เข้าสู่ระบบ</button>
+          <button id="forgotBtn" class="text-btn" type="button">ลืมรหัสผ่าน</button>
+          <p class="form-foot">ยังไม่มีบัญชี? <button class="link-inline" type="button" data-go="register">สมัครสมาชิก</button></p>
+        </form>
+      </div>
+    </section>
+
+    <section id="view-register" class="view">
+      <div class="page-head">
+        <p class="eyebrow">CREATE ACCOUNT</p>
+        <h2>สมัครสมาชิก</h2>
+        <p>เลือกประเภทบัญชีแล้วกรอกข้อมูลให้ครบถ้วน</p>
+      </div>
+      <form id="registerForm" class="panel glass wide-form">
+        <div class="segmented">
+          <label><input type="radio" name="role" value="student" checked><span>นักเรียน</span></label>
+          <label><input type="radio" name="role" value="teacher"><span>ครู</span></label>
+        </div>
+        <div class="form-grid">
+          <label>อีเมล<input id="regEmail" type="email" required></label>
+          <label>รหัสผ่าน<input id="regPassword" type="password" minlength="8" required></label>
+          <label>ยืนยันรหัสผ่าน<input id="regPassword2" type="password" minlength="8" required></label>
+        </div>
+        <div class="consent-line">
+          <input id="accountConsent" type="checkbox" required>
+          <label for="accountConsent">ยอมรับเงื่อนไขการใช้งานและการจัดเก็บข้อมูลบัญชี</label>
+        </div>
+        <button class="primary-btn" type="submit">สร้างบัญชี</button>
+      </form>
+    </section>
+
+    <section id="view-forgot" class="view">
+      <div class="auth-wrap">
+        <div class="auth-copy">
+          <p class="eyebrow">PASSWORD RECOVERY</p>
+          <h2>ลืมรหัสผ่าน</h2>
+          <p>ระบบจะส่งลิงก์ตั้งรหัสผ่านใหม่ไปยังอีเมลที่ลงทะเบียน</p>
+        </div>
+        <form id="forgotForm" class="panel glass form-panel">
+          <label>อีเมล<input id="forgotEmail" type="email" required></label>
+          <button class="primary-btn" type="submit">ส่งลิงก์ตั้งรหัสผ่านใหม่</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="view-profile" class="view">
+      <div class="page-head">
+        <p class="eyebrow">PROFILE SETUP</p>
+        <h2 id="profileTitle">กรอกข้อมูลส่วนตัว</h2>
+        <p id="profileHint">ข้อมูลนี้ใช้เชื่อมโยงสมาชิกกับห้องเรียน</p>
+      </div>
+      <form id="profileForm" class="panel glass wide-form">
+        <div class="form-grid">
+          <label>คำนำหน้า
+            <select id="prefix"><option>นาย</option><option>นางสาว</option><option>นาง</option><option>Mr.</option><option>Ms.</option><option>Mrs.</option></select>
+          </label>
+          <label>ชื่อ<input id="firstName" required></label>
+          <label>นามสกุล<input id="lastName" required></label>
+          <label id="studentIdWrap">เลขประจำตัวนักเรียน<input id="studentId"></label>
+          <label id="classNumberWrap">เลขที่<input id="classNumber" type="number" min="1" max="60"></label>
+          <label>ระดับชั้น
+            <select id="gradeLevel" required>
+              <option value="">เลือกระดับชั้น</option>
+              <option value="M1">ม.1</option><option value="M2">ม.2</option><option value="M3">ม.3</option>
+              <option value="M4">ม.4</option><option value="M5">ม.5</option><option value="M6">ม.6</option>
+            </select>
+          </label>
+          <label>ห้องเรียน
+            <select id="classroom" required><option value="">เลือกระดับชั้นก่อน</option></select>
+          </label>
+          <label>เบอร์โทรศัพท์<input id="phone" type="tel"></label>
+          <label id="parentNameWrap">ชื่อผู้ปกครอง<input id="parentName"></label>
+          <label id="parentPhoneWrap">เบอร์ผู้ปกครอง<input id="parentPhone" type="tel"></label>
+        </div>
+        <div id="teamNotice" class="notice hidden">
+          ระบบจะนำชื่อคุณเข้าสู่ทีมของคุณครูที่ลงทะเบียนเป็นครูที่ปรึกษาประจำห้องนี้
+        </div>
+        <button class="primary-btn" type="submit">บันทึกและเข้าสู่ระบบ</button>
+      </form>
+    </section>
+
+    <section id="view-student" class="view">
+      <div class="dashboard-head">
+        <div><p class="eyebrow">STUDENT DASHBOARD</p><h2 id="studentWelcome">สวัสดี</h2><p id="studentClass"></p></div>
+        <div id="studentStatus" class="status-pill danger">ยังไม่ได้ปักหมุดบ้าน</div>
+      </div>
+
+      <div class="dashboard-grid">
+        <article class="panel glass span-2">
+          <div class="section-title"><div><h3>ข้อมูลบ้านและตำแหน่ง</h3><p>ข้อมูลนี้จะแสดงเฉพาะครูที่ปรึกษาและผู้ดูแลระบบ</p></div><button id="editLocationBtn" class="ghost-btn">แก้ไขข้อมูล</button></div>
+          <div id="studentLocationSummary" class="empty-state">ยังไม่มีข้อมูลบ้าน</div>
+          <button id="openLocationFormBtn" class="primary-btn">ปักหมุดบ้านของฉัน</button>
+        </article>
+        <article class="panel glass">
+          <h3>ทีมของฉัน</h3>
+          <div id="studentTeamCard" class="info-stack"></div>
+        </article>
+      </div>
+    </section>
+
+    <section id="view-consent" class="view">
+      <div class="page-head"><p class="eyebrow">PRIVACY CONSENT</p><h2>ความยินยอมก่อนปักหมุดบ้าน</h2></div>
+      <div class="panel glass consent-card">
+        <h3>วัตถุประสงค์การเก็บข้อมูล</h3>
+        <p>โรงเรียนจะจัดเก็บข้อมูลที่อยู่ พิกัดบ้าน และข้อมูลติดต่อ เพื่อใช้สำหรับการดำเนินงานเยี่ยมบ้านนักเรียน การจัดกลุ่มเส้นทาง และการประสานงานกับผู้ปกครองเท่านั้น</p>
+        <p>ข้อมูลจะเข้าถึงได้โดยนักเรียนเจ้าของข้อมูล ครูที่ปรึกษาของห้อง และผู้ดูแลระบบที่ได้รับอนุญาต</p>
+        <label class="consent-line">
+          <input id="locationConsent" type="checkbox">
+          <span>ข้าพเจ้ายินยอมให้โรงเรียนจัดเก็บและใช้ข้อมูลดังกล่าวตามวัตถุประสงค์ข้างต้น</span>
+        </label>
+        <button id="acceptConsentBtn" class="primary-btn" disabled>ยินยอมและดำเนินการต่อ</button>
+      </div>
+    </section>
+
+    <section id="view-location" class="view">
+      <div class="page-head"><p class="eyebrow">HOME LOCATION</p><h2>ปักหมุดและกรอกรายละเอียดบ้าน</h2><p>กดใช้ตำแหน่งปัจจุบัน หรือแตะบนแผนที่เพื่อเลือกตำแหน่งบ้าน</p></div>
+      <form id="locationForm" class="location-layout">
+        <div class="panel glass map-panel">
+          <div class="map-actions">
+            <button id="locateMeBtn" class="ghost-btn" type="button">ใช้ตำแหน่งปัจจุบัน</button>
+            <span id="coordinateText">ยังไม่ได้เลือกตำแหน่ง</span>
+          </div>
+          <div id="map"></div>
+        </div>
+        <div class="panel glass wide-form">
+          <div class="form-grid">
+            <label>บ้านเลขที่<input id="houseNumber" required></label>
+            <label>หมู่<input id="moo"></label>
+            <label>หมู่บ้าน/ชุมชน<input id="village"></label>
+            <label>ซอย<input id="soi"></label>
+            <label>ถนน<input id="road"></label>
+            <label>ตำบล/แขวง<input id="subdistrict"></label>
+            <label>อำเภอ/เขต<input id="district"></label>
+            <label>จังหวัด<input id="province" value="นนทบุรี"></label>
+            <label>รหัสไปรษณีย์<input id="postalCode"></label>
+            <label>จุดสังเกต<input id="landmark"></label>
+            <label>ผู้ติดต่อ<input id="contactName"></label>
+            <label>เบอร์โทรศัพท์<input id="contactPhone" type="tel"></label>
+          </div>
+          <label>รายละเอียดเพิ่มเติม<textarea id="addressDetails" rows="4"></textarea></label>
+          <button class="primary-btn" type="submit">บันทึกข้อมูลบ้าน</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="view-teacher" class="view">
+      <div class="dashboard-head">
+        <div><p class="eyebrow">TEACHER DASHBOARD</p><h2 id="teacherWelcome">แดชบอร์ดครูที่ปรึกษา</h2><p id="teacherClass"></p></div>
+        <button id="calculateRouteBtn" class="primary-btn">คำนวณเส้นทางการเยี่ยมบ้าน</button>
+      </div>
+      <div class="metric-grid">
+        <div class="metric"><span>นักเรียนทั้งหมด</span><strong id="metricTotal">0</strong></div>
+        <div class="metric"><span>ลงทะเบียนแล้ว</span><strong id="metricJoined">0</strong></div>
+        <div class="metric success"><span>ปักหมุดแล้ว</span><strong id="metricMapped">0</strong></div>
+        <div class="metric danger"><span>ยังไม่ปักหมุด</span><strong id="metricUnmapped">0</strong></div>
+      </div>
+      <div class="panel glass table-panel">
+        <div class="section-title"><div><h3>รายชื่อนักเรียน</h3><p>เรียงตามเลขที่จากน้อยไปมาก</p></div><input id="studentSearch" class="search-input" placeholder="ค้นหาชื่อนักเรียน"></div>
+        <div class="table-wrap"><table><thead><tr><th>เลขที่</th><th>ชื่อ–สกุล</th><th>สถานะทีม</th><th>สถานะบ้าน</th><th></th></tr></thead><tbody id="studentTableBody"></tbody></table></div>
+      </div>
+      <div id="savedGroupsSection" class="panel glass table-panel">
+        <div class="section-title"><div><h3>แผนเยี่ยมบ้านที่บันทึกไว้</h3><p>สามารถเปิดดูหรือแก้ไขกลุ่มเดิมได้</p></div></div>
+        <div id="savedGroups" class="group-list empty-state">ยังไม่มีแผนที่บันทึกไว้</div>
+      </div>
+    </section>
+
+    <section id="view-route-options" class="view">
+      <div class="page-head"><p class="eyebrow">ROUTE PLANNING</p><h2>ตั้งค่าการจัดกลุ่มเยี่ยมบ้าน</h2><p>ระบบใช้พิกัดและทิศทางจากโรงเรียนเพื่อจัดกลุ่มเบื้องต้น ครูสามารถแก้ไขได้ภายหลัง</p></div>
+      <form id="routeOptionsForm" class="panel glass route-options">
+        <label class="choice-card"><input type="radio" name="routeMode" value="auto" checked><div><strong>อัตโนมัติ</strong><span>ระบบคำนวณจำนวนกลุ่มและจำนวนบ้านที่เหมาะสม</span></div></label>
+        <label class="choice-card"><input type="radio" name="routeMode" value="fixed"><div><strong>ระบุจำนวนหลังต่อกลุ่ม</strong><span>กำหนดจำนวนบ้านสูงสุดในแต่ละกลุ่ม</span></div></label>
+        <div id="fixedSizeOptions" class="hidden">
+          <div class="number-chips">
+            <label><input type="radio" name="groupSize" value="8"><span>8 หลัง</span></label>
+            <label><input type="radio" name="groupSize" value="7"><span>7 หลัง</span></label>
+            <label><input type="radio" name="groupSize" value="6"><span>6 หลัง</span></label>
+            <label><input type="radio" name="groupSize" value="5"><span>5 หลัง</span></label>
+            <label><input type="radio" name="groupSize" value="4"><span>4 หลัง</span></label>
+            <label><input type="radio" name="groupSize" value="3"><span>3 หลัง</span></label>
+            <label><input type="radio" name="groupSize" value="2"><span>2 หลัง</span></label>
+            <label><input type="radio" name="groupSize" value="1"><span>1 หลัง</span></label>
+          </div>
+          <label>หรือระบุจำนวนเอง<input id="customGroupSize" type="number" min="1" max="30" placeholder="เช่น 6"></label>
+        </div>
+        <button class="primary-btn" type="submit">เริ่มคำนวณกลุ่ม</button>
+      </form>
+    </section>
+
+    <section id="view-route-groups" class="view">
+      <div class="dashboard-head">
+        <div><p class="eyebrow">ROUTE GROUPS</p><h2>ผลการจัดกลุ่มเยี่ยมบ้าน</h2><p>ลากชื่อนักเรียนเพื่อย้ายข้ามกลุ่ม หรือใช้ปุ่มเลื่อนลำดับ</p></div>
+        <div class="action-row"><button id="recalculateBtn" class="ghost-btn">คำนวณใหม่</button><button id="saveGroupsBtn" class="primary-btn">ยืนยันและบันทึกแผน</button></div>
+      </div>
+      <div id="routeSummary" class="metric-grid"></div>
+      <div id="routeGroups" class="route-groups"></div>
+    </section>
+
+    
+    <section id="view-admin" class="view">
+      <div class="dashboard-head">
+        <div>
+          <p class="eyebrow">ADMIN DASHBOARD</p>
+          <h2>ผู้ดูแลระบบ</h2>
+          <p>จัดการบัญชี ปีการศึกษา การเลื่อนชั้น และข้อมูลย้อนหลัง</p>
+        </div>
+      </div>
+
+      <div class="admin-grid">
+        <article class="panel glass">
+          <h3>ปีการศึกษาปัจจุบัน</h3>
+          <p>ปีที่กำลังเปิดใช้งานอยู่ในระบบ</p>
+          <div class="info-row"><span>ปีการศึกษาปัจจุบัน</span><strong id="currentAcademicYearText">-</strong></div>
+          <button id="openCloseYearBtn" class="primary-btn">ปิดปีการศึกษาปัจจุบัน</button>
+        </article>
+
+        <article class="panel glass">
+          <h3>ภาพรวมระบบ</h3>
+          <div id="adminMetrics" class="info-stack"></div>
+        </article>
+      </div>
+
+      <div class="panel glass table-panel">
+        <div class="section-title">
+          <div><h3>บัญชีสมาชิก</h3><p>ค้นหา แก้ไข ตั้งรหัสผ่านชั่วคราว หรือลบบัญชีที่สมัครผิด</p></div>
+          <input id="accountSearch" class="search-input" placeholder="ค้นหาอีเมลหรือชื่อ">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>อีเมล</th><th>บทบาท</th><th>ชื่อ</th><th>ห้อง</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+            <tbody id="accountTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel glass table-panel">
+        <div class="section-title">
+          <div><h3>ข้อมูลย้อนหลัง</h3><p>เปิดดูปีการศึกษาที่ปิดแล้ว</p></div>
+          <select id="archiveYearSelect"><option value="">เลือกปีการศึกษา</option></select>
+        </div>
+        <div id="archiveSummary" class="empty-state">ยังไม่ได้เลือกปีการศึกษา</div>
+      </div>
+    </section>
+
+  </main>
+
+
+  <dialog id="passwordChangeDialog" class="password-dialog">
+    <form id="passwordChangeForm">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">SECURITY UPDATE</p>
+          <h3>ตั้งรหัสผ่านใหม่</h3>
+        </div>
+      </div>
+      <div class="password-dialog-body">
+        <p>ผู้ดูแลระบบได้ตั้งรหัสผ่านชั่วคราวให้บัญชีนี้ กรุณาตั้งรหัสผ่านใหม่ของคุณก่อนเข้าใช้งานระบบ</p>
+        <label>รหัสผ่านใหม่
+          <input id="newOwnPassword" type="password" minlength="8" autocomplete="new-password" required>
+        </label>
+        <label>ยืนยันรหัสผ่านใหม่
+          <input id="confirmOwnPassword" type="password" minlength="8" autocomplete="new-password" required>
+        </label>
+        <button class="primary-btn" type="submit">บันทึกรหัสผ่านใหม่</button>
+      </div>
+    </form>
+  </dialog>
+
+
+  <dialog id="closeYearDialog">
+    <form id="closeYearForm">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">CLOSE ACADEMIC YEAR</p>
+          <h3>ปิดปีการศึกษา</h3>
+        </div>
+        <button id="closeYearDialogBtn" class="icon-btn" type="button">×</button>
+      </div>
+      <div class="password-dialog-body">
+        <div id="closeYearPreview" class="info-stack"></div>
+        <div class="notice">
+          ระบบจะสำรองไฟล์ก่อนดำเนินการ ล็อกข้อมูลปีเก่า เลื่อนชั้นนักเรียน ม.1–ม.5
+          เปลี่ยน ม.6 เป็นศิษย์เก่า และให้ครู–นักเรียนยืนยันข้อมูลใหม่เมื่อเข้าสู่ระบบ
+        </div>
+        <div class="action-row">
+          <button id="cancelCloseYearBtn" class="ghost-btn" type="button">ยกเลิก</button>
+          <button class="danger-btn" type="submit">ยืนยันปิดปีการศึกษา</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="editAccountDialog">
+    <form id="editAccountForm">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">EDIT MEMBER</p>
+          <h3>แก้ไขข้อมูลสมาชิก</h3>
+        </div>
+        <button id="closeEditAccountBtn" class="icon-btn" type="button">×</button>
+      </div>
+      <div class="password-dialog-body">
+        <input id="editUserId" type="hidden">
+        <label>อีเมล<input id="editEmail" type="email" required></label>
+        <label>ชื่อ<input id="editFirstName" required></label>
+        <label>นามสกุล<input id="editLastName" required></label>
+        <label>ระดับชั้น
+          <select id="editGradeLevel">
+            <option value="">ไม่ระบุ</option>
+            <option value="M1">ม.1</option><option value="M2">ม.2</option><option value="M3">ม.3</option>
+            <option value="M4">ม.4</option><option value="M5">ม.5</option><option value="M6">ม.6</option>
+          </select>
+        </label>
+        <label>ห้อง<input id="editClassroom" type="number" min="1" max="14"></label>
+        <label>เลขที่<input id="editNumberInClass" type="number" min="1" max="60"></label>
+        <button class="primary-btn" type="submit">บันทึกการแก้ไข</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="detailDialog">
+    <div class="dialog-head"><h3 id="dialogTitle">รายละเอียด</h3><button id="closeDialogBtn" class="icon-btn">×</button></div>
+    <div id="dialogBody"></div>
+  </dialog>
+
+
+  <div id="loadingOverlay" class="loading-overlay hidden" role="status" aria-live="polite" aria-busy="true">
+    <div class="loading-card glass">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <div class="loading-copy">
+        <strong id="loadingTitle">กำลังโหลดข้อมูล</strong>
+        <span id="loadingMessage">กรุณารอสักครู่</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js?v=20260726-4"></script>
+</body>
+</html>
