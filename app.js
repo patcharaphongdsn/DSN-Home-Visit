@@ -291,15 +291,83 @@ $("saveGroupsBtn").onclick=async()=>{try{await api("saveGroups",{groups:state.gr
 function renderSavedGroups(){const el=$("savedGroups");if(!state.savedGroups?.length){el.className="group-list empty-state";el.textContent="ยังไม่มีแผนที่บันทึกไว้";return}
   el.className="group-list";el.innerHTML=state.savedGroups.map(g=>`<div class="info-row"><span>${g.groupName}</span><strong>${g.members?.length||0} หลัง</strong></div>`).join("")}
 
-async function loadAdmin(){
-  const d=await api("getAdminDashboard");state.academicYear=String(d.academicYear||state.academicYear);$("academicYearInput").value=state.academicYear;$("activeYearBadge").textContent=`ปีการศึกษา ${state.academicYear}`;
-  $("adminMetrics").innerHTML=Object.entries(d.metrics||{}).map(([k,v])=>`<div class="info-row"><span>${({users:"สมาชิกทั้งหมด",teachers:"ครู",students:"นักเรียน",mapped:"ปักหมุดแล้ว"})[k]||k}</span><strong>${v}</strong></div>`).join("");
-  state.accounts=d.accounts||[];renderAccounts(state.accounts);
+async function loadAdmin() {
+  const d = await api("getAdminDashboard");
+
+  state.academicYear = String(
+    d.academicYear || state.academicYear
+  );
+
+  const yearBadge = $("activeYearBadge");
+  if (yearBadge) {
+    yearBadge.textContent = `ปีการศึกษา ${state.academicYear}`;
+  }
+
+  const currentYearText = $("currentAcademicYearText");
+  if (currentYearText) {
+    currentYearText.textContent = state.academicYear;
+  }
+
+  const legacyYearInput = $("academicYearInput");
+  if (legacyYearInput) {
+    legacyYearInput.value = state.academicYear;
+  }
+
+  const metricsEl = $("adminMetrics");
+  if (metricsEl) {
+    metricsEl.innerHTML = Object.entries(d.metrics || {})
+      .map(([key, value]) => {
+        const labels = {
+          users: "สมาชิกทั้งหมด",
+          teachers: "ครู",
+          students: "นักเรียน",
+          mapped: "ปักหมุดแล้ว"
+        };
+
+        return `
+          <div class="info-row">
+            <span>${labels[key] || key}</span>
+            <strong>${value}</strong>
+          </div>
+        `;
+      })
+      .join("");
+  }
+
+  state.accounts = d.accounts || [];
+  renderAccounts(state.accounts);
 }
 function renderAccounts(list){$("accountTableBody").innerHTML=list.map((a,i)=>`<tr><td>${a.email}</td><td>${a.role}</td><td>${a.name||"-"}</td><td>${formatClass(a.classCode)}</td><td><span class="table-status ${a.status==="Active"?"success":"danger"}">${a.status}</span></td><td><button class="ghost-btn toggle-account" data-i="${i}">${a.status==="Active"?"ระงับ":"เปิดใช้งาน"}</button></td></tr>`).join("");
   document.querySelectorAll(".toggle-account").forEach(b=>b.onclick=async()=>{const a=state.accounts[+b.dataset.i];await api("toggleAccount",{email:a.email});a.status=a.status==="Active"?"Suspended":"Active";renderAccounts(state.accounts)})}
 $("accountSearch").oninput=e=>{const q=e.target.value.toLowerCase();renderAccounts(state.accounts.filter(a=>`${a.email} ${a.name}`.toLowerCase().includes(q)))};
-$("academicYearForm").onsubmit=async e=>{e.preventDefault();const year=String($("academicYearInput").value);await api("setAcademicYear",{year});state.academicYear=year;$("activeYearBadge").textContent=`ปีการศึกษา ${year}`;toast("เปลี่ยนปีการศึกษาเรียบร้อยแล้ว")};
+const legacyAcademicYearForm = $("academicYearForm");
+
+if (legacyAcademicYearForm) {
+  legacyAcademicYearForm.onsubmit = async (e) => {
+    e.preventDefault();
+
+    const input = $("academicYearInput");
+    if (!input) return;
+
+    const year = String(input.value);
+
+    await api("setAcademicYear", { year });
+
+    state.academicYear = year;
+
+    const badge = $("activeYearBadge");
+    if (badge) {
+      badge.textContent = `ปีการศึกษา ${year}`;
+    }
+
+    const currentYearText = $("currentAcademicYearText");
+    if (currentYearText) {
+      currentYearText.textContent = year;
+    }
+
+    toast("เปลี่ยนปีการศึกษาเรียบร้อยแล้ว");
+  };
+}
 
 function formatClass(c){if(!c)return"-";return c.replace(/^M(\d)-(\d+)$/,"ม.$1/$2")}
 function fillLocationForm(loc){
