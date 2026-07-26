@@ -41,7 +41,14 @@ const LOADING_MESSAGES = {
   saveGroups: ["กำลังบันทึกแผนเยี่ยมบ้าน", "กรุณารอสักครู่"],
   getAdminDashboard: ["กำลังโหลดข้อมูลระบบ", "กรุณารอสักครู่"],
   setAcademicYear: ["กำลังเปลี่ยนปีการศึกษา", "กรุณารอสักครู่"],
-  toggleAccount: ["กำลังอัปเดตบัญชี", "กรุณารอสักครู่"]
+  toggleAccount: ["กำลังอัปเดตบัญชี", "กรุณารอสักครู่"],
+  updateAccount: ["กำลังบันทึกข้อมูลสมาชิก", "กรุณารอสักครู่"],
+  deleteAccount: ["กำลังลบบัญชี", "กรุณารอสักครู่"],
+  setTemporaryPassword: ["กำลังตั้งรหัสผ่านชั่วคราว", "กรุณารอสักครู่"],
+  changeOwnPassword: ["กำลังบันทึกรหัสผ่านใหม่", "กรุณารอสักครู่"],
+  getCloseYearPreview: ["กำลังตรวจสอบข้อมูลปีการศึกษา", "กรุณารอสักครู่"],
+  closeAcademicYear: ["กำลังปิดปีการศึกษา", "ระบบกำลังสำรองข้อมูลและเลื่อนชั้น"],
+  getArchiveData: ["กำลังโหลดข้อมูลย้อนหลัง", "กรุณารอสักครู่"]
 };
 
 function showLoading(action = "", title = "", message = "") {
@@ -128,6 +135,11 @@ $("loginForm").addEventListener("submit",async e=>{
     const data=await api("login",{email:$("loginEmail").value.trim(),password:$("loginPassword").value,role:state.authRole});
     localStorage.setItem("dsnToken",data.token); state.user=data.user;state.profile=data.profile;
     $("userMenu").classList.remove("hidden");
+    if(data.user.mustChangePassword){
+      const dialog=$("passwordChangeDialog");
+      if(dialog) dialog.showModal();
+      return;
+    }
     if(!data.user.profileCompleted){configureProfile(data.user.role);showView("profile");return}
     await openDashboard(data.user.role);
   }catch(err){toast(err.message)}
@@ -293,81 +305,188 @@ function renderSavedGroups(){const el=$("savedGroups");if(!state.savedGroups?.le
 
 async function loadAdmin() {
   const d = await api("getAdminDashboard");
+  state.academicYear = String(d.academicYear || state.academicYear);
 
-  state.academicYear = String(
-    d.academicYear || state.academicYear
-  );
-
-  const yearBadge = $("activeYearBadge");
-  if (yearBadge) {
-    yearBadge.textContent = `ปีการศึกษา ${state.academicYear}`;
-  }
-
+  const badge = $("activeYearBadge");
+  if (badge) badge.textContent = `ปีการศึกษา ${state.academicYear}`;
   const currentYearText = $("currentAcademicYearText");
-  if (currentYearText) {
-    currentYearText.textContent = state.academicYear;
-  }
+  if (currentYearText) currentYearText.textContent = state.academicYear;
 
-  const legacyYearInput = $("academicYearInput");
-  if (legacyYearInput) {
-    legacyYearInput.value = state.academicYear;
-  }
-
-  const metricsEl = $("adminMetrics");
-  if (metricsEl) {
-    metricsEl.innerHTML = Object.entries(d.metrics || {})
-      .map(([key, value]) => {
-        const labels = {
-          users: "สมาชิกทั้งหมด",
-          teachers: "ครู",
-          students: "นักเรียน",
-          mapped: "ปักหมุดแล้ว"
-        };
-
-        return `
-          <div class="info-row">
-            <span>${labels[key] || key}</span>
-            <strong>${value}</strong>
-          </div>
-        `;
-      })
-      .join("");
-  }
+  const labels = {users:"สมาชิกทั้งหมด",teachers:"ครู",students:"นักเรียน",mapped:"ปักหมุดแล้ว"};
+  $("adminMetrics").innerHTML = Object.entries(d.metrics || {}).map(([key,value]) => `
+    <div class="info-row"><span>${labels[key] || key}</span><strong>${value}</strong></div>
+  `).join("");
 
   state.accounts = d.accounts || [];
   renderAccounts(state.accounts);
+  renderArchiveYears(d.archiveYears || []);
 }
-function renderAccounts(list){$("accountTableBody").innerHTML=list.map((a,i)=>`<tr><td>${a.email}</td><td>${a.role}</td><td>${a.name||"-"}</td><td>${formatClass(a.classCode)}</td><td><span class="table-status ${a.status==="Active"?"success":"danger"}">${a.status}</span></td><td><button class="ghost-btn toggle-account" data-i="${i}">${a.status==="Active"?"ระงับ":"เปิดใช้งาน"}</button></td></tr>`).join("");
-  document.querySelectorAll(".toggle-account").forEach(b=>b.onclick=async()=>{const a=state.accounts[+b.dataset.i];await api("toggleAccount",{email:a.email});a.status=a.status==="Active"?"Suspended":"Active";renderAccounts(state.accounts)})}
-$("accountSearch").oninput=e=>{const q=e.target.value.toLowerCase();renderAccounts(state.accounts.filter(a=>`${a.email} ${a.name}`.toLowerCase().includes(q)))};
-const legacyAcademicYearForm = $("academicYearForm");
 
-if (legacyAcademicYearForm) {
-  legacyAcademicYearForm.onsubmit = async (e) => {
-    e.preventDefault();
-
-    const input = $("academicYearInput");
-    if (!input) return;
-
-    const year = String(input.value);
-
-    await api("setAcademicYear", { year });
-
-    state.academicYear = year;
-
-    const badge = $("activeYearBadge");
-    if (badge) {
-      badge.textContent = `ปีการศึกษา ${year}`;
-    }
-
-    const currentYearText = $("currentAcademicYearText");
-    if (currentYearText) {
-      currentYearText.textContent = year;
-    }
-
-    toast("เปลี่ยนปีการศึกษาเรียบร้อยแล้ว");
-  };
+function renderAccounts(list) {
+  $("accountTableBody").innerHTML = list.map(a => `
+    <tr>
+      <td>${escapeHtml(a.email)}</td>
+      <td>${escapeHtml(a.role)}</td>
+      <td>${escapeHtml(a.name || "-")}</td>
+      <td>${formatClass(a.classCode)}</td>
+      <td><span class="table-status ${a.status === "Active" ? "success" : "danger"}">${escapeHtml(a.status)}</span></td>
+      <td>
+        <div class="admin-actions">
+          <button class="ghost-btn edit-account" data-user-id="${a.userId}">แก้ไข</button>
+          <button class="ghost-btn temp-password" data-user-id="${a.userId}">รหัสชั่วคราว</button>
+          <button class="ghost-btn toggle-account" data-user-id="${a.userId}">${a.status === "Active" ? "ระงับ" : "เปิดใช้งาน"}</button>
+          <button class="danger-btn delete-account" data-user-id="${a.userId}">ลบ</button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+  bindAdminAccountButtons();
 }
+
+function bindAdminAccountButtons() {
+  document.querySelectorAll(".edit-account").forEach(btn => btn.onclick = () => openEditAccount(btn.dataset.userId));
+  document.querySelectorAll(".temp-password").forEach(btn => btn.onclick = () => setTemporaryPassword(btn.dataset.userId));
+  document.querySelectorAll(".toggle-account").forEach(btn => btn.onclick = () => toggleMemberAccount(btn.dataset.userId));
+  document.querySelectorAll(".delete-account").forEach(btn => btn.onclick = () => deleteMemberAccount(btn.dataset.userId));
+}
+
+function findAccount(userId) {
+  return state.accounts.find(a => String(a.userId) === String(userId));
+}
+
+function openEditAccount(userId) {
+  const a = findAccount(userId);
+  if (!a) return toast("ไม่พบข้อมูลสมาชิก");
+  $("editUserId").value = a.userId;
+  $("editEmail").value = a.email || "";
+  $("editFirstName").value = a.firstName || "";
+  $("editLastName").value = a.lastName || "";
+  $("editGradeLevel").value = a.gradeLevel || "";
+  $("editClassroom").value = a.classroom || "";
+  $("editNumberInClass").value = a.numberInClass || "";
+  $("editAccountDialog").showModal();
+}
+
+$("closeEditAccountBtn").onclick = () => $("editAccountDialog").close();
+$("editAccountForm").onsubmit = async e => {
+  e.preventDefault();
+  try {
+    await api("updateAccount", {
+      userId: $("editUserId").value,
+      email: $("editEmail").value.trim(),
+      firstName: $("editFirstName").value.trim(),
+      lastName: $("editLastName").value.trim(),
+      gradeLevel: $("editGradeLevel").value,
+      classroom: $("editClassroom").value,
+      numberInClass: $("editNumberInClass").value
+    });
+    $("editAccountDialog").close();
+    toast("แก้ไขข้อมูลสมาชิกเรียบร้อยแล้ว");
+    await loadAdmin();
+  } catch (err) { toast(err.message); }
+};
+
+async function setTemporaryPassword(userId) {
+  const a = findAccount(userId);
+  if (!a) return toast("ไม่พบข้อมูลสมาชิก");
+  const password = prompt(`ตั้งรหัสผ่านชั่วคราวสำหรับ ${a.email}\nต้องมีอย่างน้อย 8 ตัวอักษร`);
+  if (password === null) return;
+  if (password.length < 8) return toast("รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร");
+  try {
+    await api("setTemporaryPassword", {userId, password});
+    toast("ตั้งรหัสผ่านชั่วคราวแล้ว สมาชิกต้องเปลี่ยนรหัสเมื่อเข้าสู่ระบบ");
+  } catch (err) { toast(err.message); }
+}
+
+async function toggleMemberAccount(userId) {
+  try {
+    await api("toggleAccount", {userId});
+    toast("อัปเดตสถานะบัญชีเรียบร้อยแล้ว");
+    await loadAdmin();
+  } catch (err) { toast(err.message); }
+}
+
+async function deleteMemberAccount(userId) {
+  const a = findAccount(userId);
+  if (!a) return toast("ไม่พบข้อมูลสมาชิก");
+  if (!confirm(`ยืนยันลบบัญชี ${a.email} ?\nการลบไม่สามารถย้อนกลับได้`)) return;
+  try {
+    await api("deleteAccount", {userId});
+    toast("ลบบัญชีเรียบร้อยแล้ว");
+    await loadAdmin();
+  } catch (err) { toast(err.message); }
+}
+
+$("accountSearch").oninput = e => {
+  const q = e.target.value.toLowerCase();
+  renderAccounts(state.accounts.filter(a => `${a.email} ${a.name} ${a.classCode}`.toLowerCase().includes(q)));
+};
+
+function renderArchiveYears(years) {
+  const select = $("archiveYearSelect");
+  select.innerHTML = '<option value="">เลือกปีการศึกษา</option>' + years.map(y => `<option value="${y}">${y}</option>`).join("");
+}
+
+$("archiveYearSelect").onchange = async e => {
+  const year = e.target.value;
+  if (!year) { $("archiveSummary").textContent = "ยังไม่ได้เลือกปีการศึกษา"; return; }
+  try {
+    const d = await api("getArchiveData", {year});
+    const a = d.archive;
+    $("archiveSummary").innerHTML = `
+      <div class="info-stack">
+        <div class="info-row"><span>ปีการศึกษา</span><strong>${escapeHtml(a.year)}</strong></div>
+        <div class="info-row"><span>วันที่ปิดปี</span><strong>${escapeHtml(a.closedAtText || "-")}</strong></div>
+        <div class="info-row"><span>ครู</span><strong>${a.teachers}</strong></div>
+        <div class="info-row"><span>นักเรียน</span><strong>${a.students}</strong></div>
+        <div class="info-row"><span>ปักหมุดแล้ว</span><strong>${a.mapped}</strong></div>
+        <div class="info-row"><span>กลุ่มเยี่ยมบ้าน</span><strong>${a.groups}</strong></div>
+        ${a.backupUrl ? `<a class="primary-btn" target="_blank" rel="noopener" href="${a.backupUrl}">เปิดไฟล์สำรองปีการศึกษา</a>` : ""}
+      </div>`;
+  } catch (err) { toast(err.message); }
+};
+
+$("openCloseYearBtn").onclick = async () => {
+  try {
+    const d = await api("getCloseYearPreview");
+    const p = d.preview;
+    $("closeYearPreview").innerHTML = `
+      <div class="info-row"><span>ปีการศึกษาที่จะปิด</span><strong>${p.year}</strong></div>
+      <div class="info-row"><span>ปีการศึกษาใหม่</span><strong>${p.nextYear}</strong></div>
+      <div class="info-row"><span>ครู</span><strong>${p.teachers}</strong></div>
+      <div class="info-row"><span>นักเรียน</span><strong>${p.students}</strong></div>
+      <div class="info-row"><span>นักเรียน ม.6 เป็นศิษย์เก่า</span><strong>${p.graduates}</strong></div>`;
+    $("closeYearDialog").showModal();
+  } catch (err) { toast(err.message); }
+};
+$("closeYearDialogBtn").onclick = () => $("closeYearDialog").close();
+$("cancelCloseYearBtn").onclick = () => $("closeYearDialog").close();
+$("closeYearForm").onsubmit = async e => {
+  e.preventDefault();
+  if (!confirm("ยืนยันปิดปีการศึกษาและเลื่อนชั้นข้อมูลทั้งหมด?")) return;
+  try {
+    const d = await api("closeAcademicYear");
+    $("closeYearDialog").close();
+    toast(`ปิดปีการศึกษาแล้ว ระบบเปลี่ยนเป็นปี ${d.nextYear}`);
+    await loadAdmin();
+  } catch (err) { toast(err.message); }
+};
+
+$("passwordChangeForm").onsubmit = async e => {
+  e.preventDefault();
+  const password = $("newOwnPassword").value;
+  const confirmPassword = $("confirmOwnPassword").value;
+  if (password !== confirmPassword) return toast("รหัสผ่านทั้งสองช่องไม่ตรงกัน");
+  try {
+    await api("changeOwnPassword", {password});
+    state.user.mustChangePassword = false;
+    $("passwordChangeDialog").close();
+    $("passwordChangeForm").reset();
+    toast("ตั้งรหัสผ่านใหม่เรียบร้อยแล้ว");
+    if (!state.user.profileCompleted) { configureProfile(state.user.role); showView("profile"); return; }
+    await openDashboard(state.user.role);
+  } catch (err) { toast(err.message); }
+};
 
 function formatClass(c){if(!c)return"-";return c.replace(/^M(\d)-(\d+)$/,"ม.$1/$2")}
 function fillLocationForm(loc){
