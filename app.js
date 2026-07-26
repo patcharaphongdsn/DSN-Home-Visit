@@ -466,11 +466,12 @@ $("editAccountForm").onsubmit = async event => {
     return toast("ไม่พบข้อมูลสมาชิก");
   }
 
-  const payload = {
-    targetEmail: account.email,
-    role: account.role,
-    email: $("editEmail").value.trim()
-  };
+const payload = {
+  targetUserId: account.userId,
+  targetEmail: account.email,
+  role: account.role,
+  email: $("editEmail").value.trim()
+};
 
   if (account.role === "teacher" || account.role === "student") {
     payload.firstName = $("editFirstName").value.trim();
@@ -580,8 +581,9 @@ async function deleteMemberAccount(email) {
 
   try {
     await api("deleteAccount", {
-      targetEmail: account.email
-    });
+  targetUserId: account.userId,
+  targetEmail: account.email
+});
 
     toast(`ลบบัญชี ${account.email} เรียบร้อยแล้ว`);
     await loadAdmin();
