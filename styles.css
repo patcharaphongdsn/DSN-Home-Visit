@@ -234,3 +234,196 @@ body.is-loading textarea{
     width: 100%;
   }
 }
+/* =========================
+   Saved & completed visits
+========================= */
+
+.saved-group-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.saved-group-row:last-child {
+  border-bottom: 0;
+}
+
+.saved-group-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.saved-group-info strong {
+  color: var(--text);
+  font-size: 17px;
+  line-height: 1.4;
+}
+
+.saved-group-info span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.saved-group-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.saved-group-actions .ghost-btn,
+.saved-group-actions .primary-btn {
+  white-space: nowrap;
+}
+
+.completed-group-row {
+  padding: 18px;
+  border: 1px solid rgba(23, 131, 79, 0.12);
+  border-radius: 22px;
+  background: rgba(23, 131, 79, 0.05);
+}
+
+.completed-group-row + .completed-group-row {
+  margin-top: 10px;
+}
+
+.completed-group-row:last-child {
+  border-bottom: 1px solid rgba(23, 131, 79, 0.12);
+}
+
+#completeVisitDialog .dialog-card,
+#completedVisitDetailDialog .dialog-card {
+  background: var(--surface-strong);
+}
+
+#completeVisitGroupSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+#completeVisitGroupSummary strong,
+#completeVisitGroupSummary span {
+  display: block;
+}
+
+#completeVisitGroupSummary span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+#completeVisitDate {
+  min-height: 52px;
+}
+
+.muted-text {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.dialog-body {
+  padding: 24px;
+  display: grid;
+  gap: 18px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 0 24px 24px;
+}
+
+.completed-member-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.completed-member-item {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.completed-member-item > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.completed-member-item strong {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.completed-member-item span,
+.completed-member-item small {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.completed-map-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  text-decoration: none;
+  margin-top: 4px;
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+  .saved-group-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .saved-group-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .saved-group-actions .ghost-btn,
+  .saved-group-actions .primary-btn {
+    flex: 1;
+  }
+
+  #completeVisitGroupSummary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dialog-actions {
+    flex-direction: column-reverse;
+  }
+
+  .dialog-actions .ghost-btn,
+  .dialog-actions .primary-btn {
+    width: 100%;
+  }
+
+  .completed-member-item > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .completed-map-link {
+    width: 100%;
+  }
+}
